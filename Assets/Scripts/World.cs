@@ -16,8 +16,11 @@ public class World : MonoBehaviour
 
     public Room[] rooms;
 
-    [TableList(), DisableInInlineEditors]
+    [TableList()]
     public BlockType[] blockTypes;
+
+    [TableList()]
+    public EntitySpawnerType[] entitySpawnerTypes;
 
     public Chunk[,,] chunks = new Chunk[VoxelData.worldSizeInChunks.x, VoxelData.worldSizeInChunks.y, VoxelData.worldSizeInChunks.z];
 
@@ -115,5 +118,20 @@ public class BlockType
         }
 
     }
+
+}
+
+
+[System.Serializable]
+public class EntitySpawnerType
+{
+    [PreviewField(Alignment = ObjectFieldAlignment.Center)]
+    public Sprite editorIcon;
+
+    [Range(0, 100)]
+    public int chanceToSpawnCheck = 100;
+
+    public GameObject[] prefabSpawnPool;
+
 
 }

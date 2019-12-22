@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.IO;
 
 public class CreativeMenu : MenuPanel
 {
@@ -9,6 +10,8 @@ public class CreativeMenu : MenuPanel
     World world;
     public GridLayoutGroup blockGroup;
     public BlockSelectButton blockButton;
+
+    public List<string> roomFiles;
 
     private void Start()
     {
@@ -27,6 +30,20 @@ public class CreativeMenu : MenuPanel
                 currentButton = Instantiate(blockButton.gameObject, blockGroup.transform).GetComponent<BlockSelectButton>();
         }
 
+        UpdateFileNames();
+
+    }
+
+
+    public void UpdateFileNames()
+    {
+        roomFiles = new List<string>(Directory.GetFiles(Application.streamingAssetsPath + "/Rooms", "*.chunk"));
+
+        foreach(string s in roomFiles)
+        {
+
+            Debug.Log(roomFiles.IndexOf(s) + ": " + Path.GetFileName(s));
+        }
     }
 
 

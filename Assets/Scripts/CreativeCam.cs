@@ -90,7 +90,8 @@ public class CreativeCam : MonoBehaviour
                 blockPlacePosition.y += hit.normal.y;
                 blockPlacePosition.z += hit.normal.z;
 
-                Instantiate(roomLightPrefab, blockPlacePosition, Quaternion.identity, world.GetChunkFromVector3(blockPlacePosition).chunkObject.transform);
+                //Instantiate(roomLightPrefab, blockPlacePosition, Quaternion.identity, world.GetChunkFromVector3(blockPlacePosition).chunkObject.transform);
+                world.GetChunkFromVector3(blockPlacePosition).EditVoxel(blockPlacePosition, 0, VoxelData.VoxelTypes.EntitySpawner);
             }
         }
         else

@@ -24,6 +24,7 @@ public class Chunk
     List<int> triangles = new List<int>();
     List<Vector2> uvs = new List<Vector2>();
     List<Vector3> normals = new List<Vector3>();
+    List<GameObject> spawners = new List<GameObject>();
 
     VoxelState[,,] voxelMap = new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
 
@@ -39,6 +40,7 @@ public class Chunk
         meshFilter = chunkObject.AddComponent<MeshFilter>();
         meshRenderer = chunkObject.AddComponent<MeshRenderer>();
         meshCollider = chunkObject.AddComponent<MeshCollider>();
+        chunkObject.isStatic = true;
 
         meshRenderer.material = world.material;
 
@@ -129,7 +131,7 @@ public class Chunk
 
     }
 
-    public void EditVoxel(Vector3 pos, int newID)
+    public void EditVoxel(Vector3 pos, int newID, VoxelData.VoxelTypes _voxelType = VoxelData.VoxelTypes.Block)
     {
 
         int xCheck = Mathf.FloorToInt(pos.x);
@@ -141,6 +143,7 @@ public class Chunk
         zCheck -= Mathf.FloorToInt(chunkObject.transform.position.z);
 
         voxelMap[xCheck, yCheck, zCheck].id = newID;
+        voxelMap[xCheck, yCheck, zCheck].voxelType = _voxelType;
 
         CreateMeshData();
         CreateMesh();
@@ -204,6 +207,9 @@ public class Chunk
         uvs.Clear();
         normals.Clear();
 
+        foreach (GameObject s in spawners) Object.Destroy(s);
+        spawners.Clear();
+
     }
 
 
@@ -234,65 +240,82 @@ public class Chunk
 
         //bool isTransparent = world.blockTypes[blockID].renderNeighborFaces;
 
-        for (int p = 0; p < 6; p++)
+        // BLOCKS
+        if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.Block)
         {
-            Vector3Int newCheck = new Vector3Int((int)(pos.x + VoxelData.faceChecks[p].x), (int)(pos.y + VoxelData.faceChecks[p].y), (int)(pos.z + VoxelData.faceChecks[p].z));
-
-            VoxelState neighbor = null;
-            if (CheckVoxel(newCheck))
-                neighbor = voxelMap[newCheck.x, newCheck.y, newCheck.z];
-
-            if ((neighbor == null || world.blockTypes[neighbor.id].renderNeighborFaces) && world.blockTypes[blockID].isSolid)
+            for (int p = 0; p < 6; p++)
             {
-
-                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
-                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 1]]);
-                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 2]]);
-                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 3]]);
-
-                for (int i = 0; i < 4; i++)
-                    normals.Add(VoxelData.faceChecks[p]);
-
-                //if (p == 2 || p == 3)
-                //    AddTexture(world.blockTypes[blockID].GetTextureID(BlockType.FaceType.TopBottom));
-                //else
-                //    AddTexture(world.blockTypes[blockID].GetTextureID(BlockType.FaceType.Side));
-
-                if (p == 2 || p == 3)
-                    AddTexture(world.blockTypes[blockID].textureTopBottomFace);
-                else
-                    AddTexture(world.blockTypes[blockID].textureSideFace);
-
-                //float lightLevel = neighbor.globalLightPercent;
-
-                //colors.Add(new Color(0, 0, 0, lightLevel));
-                //colors.Add(new Color(0, 0, 0, lightLevel));
-                //colors.Add(new Color(0, 0, 0, lightLevel));
-                //colors.Add(new Color(0, 0, 0, lightLevel));
+                Vector3Int newCheck = new Vector3Int((int)(pos.x + VoxelData.faceChecks[p].x), (int)(pos.y + VoxelData.faceChecks[p].y), (int)(pos.z + VoxelData.faceChecks[p].z));
 
 
-                triangles.Add(vertexIndex);
-                triangles.Add(vertexIndex + 1);
-                triangles.Add(vertexIndex + 2);
-                triangles.Add(vertexIndex + 2);
-                triangles.Add(vertexIndex + 1);
-                triangles.Add(vertexIndex + 3);
-                
-                //else
-                //{
-                //    transparentTriangles.Add(vertexIndex);
-                //    transparentTriangles.Add(vertexIndex + 1);
-                //    transparentTriangles.Add(vertexIndex + 2);
-                //    transparentTriangles.Add(vertexIndex + 2);
-                //    transparentTriangles.Add(vertexIndex + 1);
-                //    transparentTriangles.Add(vertexIndex + 3);
-                //}
+                VoxelState neighbor = null;
+                if (CheckVoxel(newCheck))
+                    neighbor = voxelMap[newCheck.x, newCheck.y, newCheck.z];
 
-                vertexIndex += 4;
+                if ((neighbor == null || world.blockTypes[neighbor.id].renderNeighborFaces) && world.blockTypes[blockID].isSolid)
+                {
+
+                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
+                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 1]]);
+                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 2]]);
+                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 3]]);
+
+                    for (int i = 0; i < 4; i++)
+                        normals.Add(VoxelData.faceChecks[p]);
+
+                    if (p == 2 || p == 3)
+                        AddTexture(world.blockTypes[blockID].textureTopBottomFace);
+                    else
+                        AddTexture(world.blockTypes[blockID].textureSideFace);
+
+                    //float lightLevel = neighbor.globalLightPercent;
+
+                    //colors.Add(new Color(0, 0, 0, lightLevel));
+                    //colors.Add(new Color(0, 0, 0, lightLevel));
+                    //colors.Add(new Color(0, 0, 0, lightLevel));
+                    //colors.Add(new Color(0, 0, 0, lightLevel));
+
+
+                    triangles.Add(vertexIndex);
+                    triangles.Add(vertexIndex + 1);
+                    triangles.Add(vertexIndex + 2);
+                    triangles.Add(vertexIndex + 2);
+                    triangles.Add(vertexIndex + 1);
+                    triangles.Add(vertexIndex + 3);
+
+                    //else
+                    //{
+                    //    transparentTriangles.Add(vertexIndex);
+                    //    transparentTriangles.Add(vertexIndex + 1);
+                    //    transparentTriangles.Add(vertexIndex + 2);
+                    //    transparentTriangles.Add(vertexIndex + 2);
+                    //    transparentTriangles.Add(vertexIndex + 1);
+                    //    transparentTriangles.Add(vertexIndex + 3);
+                    //}
+
+                    vertexIndex += 4;
+
+                }
+
 
             }
         }
 
+        if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.EntitySpawner)
+        {
+            EntitySpawnerType entitySpawnerType = world.entitySpawnerTypes[voxelMap[x, y, z].id];
+
+            if (true)
+            {
+                int diceRoll = Random.Range(1, 101);
+                if (diceRoll <= entitySpawnerType.chanceToSpawnCheck)
+                {
+                    GameObject selectedObject = entitySpawnerType.prefabSpawnPool[Random.Range(0, entitySpawnerType.prefabSpawnPool.Length)];
+                    spawners.Add(Object.Instantiate(selectedObject, pos, Quaternion.identity));
+                    voxelMap[x, y, z].spawned = true;
+                }
+            }
+        }
     }
 
     public VoxelState GetVoxelFromMap(Vector3 pos)
@@ -486,15 +509,18 @@ public class VoxelMapData
 [System.Serializable]
 public class VoxelState
 {
-    public int id;
-    
-    public VoxelState()
-    {
-        id = 0;
-    }
+    public int id = 0;
+    public VoxelData.VoxelTypes voxelType = VoxelData.VoxelTypes.Block;
+    public bool spawned = false;
 
     public VoxelState(int _id)
     {
         id = _id;
+    }
+
+    public VoxelState(int _id, VoxelData.VoxelTypes _voxelType)
+    {
+        id = _id;
+        voxelType = _voxelType;
     }
 }

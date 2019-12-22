@@ -10,6 +10,12 @@ public static class VoxelData
 
     public static int seed;
 
+    public enum VoxelTypes
+    {
+        Block,
+        EntitySpawner
+    }
+
     public static Vector3Int WorldSizeInVoxels
     {
         get { return (chunkSize * worldSizeInChunks); }
