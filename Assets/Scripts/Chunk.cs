@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 public class Chunk
 {
@@ -13,7 +15,7 @@ public class Chunk
     MeshRenderer meshRenderer;
     MeshFilter meshFilter;
     MeshCollider meshCollider;
-    GameObject chunkObject;
+    public GameObject chunkObject;
     Vector3 position;
 
     int vertexIndex = 0;
@@ -23,7 +25,7 @@ public class Chunk
     List<Vector2> uvs = new List<Vector2>();
     List<Vector3> normals = new List<Vector3>();
 
-    VoxelState[,,] voxelMap = new VoxelState[VoxelData.chunkSize, VoxelData.chunkSize, VoxelData.chunkSize];
+    VoxelState[,,] voxelMap = new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
 
     World world;
 
@@ -41,45 +43,53 @@ public class Chunk
         meshRenderer.material = world.material;
 
         chunkObject.transform.SetParent(world.transform);
-        chunkObject.transform.position = new Vector3(coord.x * VoxelData.chunkSize, coord.y * VoxelData.chunkSize, coord.z * VoxelData.chunkSize);
+        chunkObject.transform.position = new Vector3(coord.x * VoxelData.chunkSize.x, coord.y * VoxelData.chunkSize.y, coord.z * VoxelData.chunkSize.z);
         chunkObject.name = coord.x + ", " + coord.y + ", " + coord.z;
         position = chunkObject.transform.position;
 
         GenerateVoxelMap();
-        CreateMeshData();
-        CreateMesh();
+        
 
 
     }
 
 
-    void GenerateVoxelMap()
+    public void GenerateVoxelMap()
     {
-        for (int x = 0; x < VoxelData.chunkSize; x++)
+        //for (int i = 0; i < chunkObject.transform.childCount; i++)
+        //{
+        //    Object.Destroy(chunkObject.transform.GetChild(i));
+        //}
+
+        for (int x = 0; x < VoxelData.chunkSize.x; x++)
         {
-            for (int y = 0; y < VoxelData.chunkSize; y++)
+            for (int y = 0; y < VoxelData.chunkSize.y; y++)
             {
-                for (int z = 0; z < VoxelData.chunkSize; z++)
+                for (int z = 0; z < VoxelData.chunkSize.z; z++)
                 {
                     //voxelMap[x, y, z] = new VoxelState(Random.Range(1, world.blockTypes.Length));
-                    if ((x == 0 || x == VoxelData.chunkSize - 1) || (y == 0 || y == VoxelData.chunkSize - 1) || (z == 0 || z == VoxelData.chunkSize - 1)) voxelMap[x, y, z] = new VoxelState(1);
+                    if ((x == 0 || x == VoxelData.chunkSize.x - 1) || (y == 0 || y == VoxelData.chunkSize.y - 1) || (z == 0 || z == VoxelData.chunkSize.z - 1)) voxelMap[x, y, z] = new VoxelState(1);
                     else voxelMap[x, y, z] = new VoxelState(0);
                 }
             }
         }
+
+        CreateMeshData();
+        CreateMesh();
     }
 
 
     public void CreateMeshData()
     {
 
-        for (int y = 0; y < VoxelData.chunkSize; y++)
-        {
-            for (int x = 0; x < VoxelData.chunkSize; x++)
-            {
-                for (int z = 0; z < VoxelData.chunkSize; z++)
-                {
+        ClearMeshData();
 
+        for (int y = 0; y < VoxelData.chunkSize.y; y++)
+        {
+            for (int x = 0; x < VoxelData.chunkSize.x; x++)
+            {
+                for (int z = 0; z < VoxelData.chunkSize.z; z++)
+                {
                     UpdateMeshData(new Vector3(x, y, z));
 
                 }
@@ -119,7 +129,7 @@ public class Chunk
 
     }
 
-    public void EditVoxel(Vector3 pos, byte newID)
+    public void EditVoxel(Vector3 pos, int newID)
     {
 
         int xCheck = Mathf.FloorToInt(pos.x);
@@ -132,14 +142,15 @@ public class Chunk
 
         voxelMap[xCheck, yCheck, zCheck].id = newID;
 
-
+        CreateMeshData();
+        CreateMesh();
 
     }
 
     bool IsVoxelInChunk(int x, int y, int z)
     {
 
-        if (x < 0 || x > VoxelData.chunkSize - 1 || y < 0 || y > VoxelData.chunkSize - 1 || z < 0 || z > VoxelData.chunkSize - 1)
+        if (x < 0 || x > VoxelData.chunkSize.x - 1 || y < 0 || y > VoxelData.chunkSize.y - 1 || z < 0 || z > VoxelData.chunkSize.z - 1)
             return false;
         else return true;
 
@@ -242,10 +253,15 @@ public class Chunk
                 for (int i = 0; i < 4; i++)
                     normals.Add(VoxelData.faceChecks[p]);
 
+                //if (p == 2 || p == 3)
+                //    AddTexture(world.blockTypes[blockID].GetTextureID(BlockType.FaceType.TopBottom));
+                //else
+                //    AddTexture(world.blockTypes[blockID].GetTextureID(BlockType.FaceType.Side));
+
                 if (p == 2 || p == 3)
-                    AddTexture(world.blockTypes[blockID].GetTextureID(BlockType.FaceType.TopBottom));
+                    AddTexture(world.blockTypes[blockID].textureTopBottomFace);
                 else
-                    AddTexture(world.blockTypes[blockID].GetTextureID(BlockType.FaceType.Side));
+                    AddTexture(world.blockTypes[blockID].textureSideFace);
 
                 //float lightLevel = neighbor.globalLightPercent;
 
@@ -291,6 +307,7 @@ public class Chunk
     void AddTexture(int textureID)
     {
 
+
         float y = textureID / VoxelData.textureAtlasSizeInBlocks;
         float x = textureID - (y * VoxelData.textureAtlasSizeInBlocks);
 
@@ -303,6 +320,66 @@ public class Chunk
         uvs.Add(new Vector2(x, y + VoxelData.normalizedBlockTextureSize));
         uvs.Add(new Vector2(x + VoxelData.normalizedBlockTextureSize, y));
         uvs.Add(new Vector2(x + VoxelData.normalizedBlockTextureSize, y + VoxelData.normalizedBlockTextureSize));
+    }
+
+    void AddTexture(Sprite sprite)
+    {
+        //It's important to note that Rect is a value type because it is a struct, so this copies the Rect.  You don't want to change the original.
+
+        float x = sprite.rect.x;
+        float y = sprite.rect.y;
+        float width = sprite.rect.width;
+        float height = sprite.rect.height;
+
+        x /= sprite.texture.width;
+        width /= sprite.texture.width;
+        y /= sprite.texture.height;
+        height /= sprite.texture.height;
+
+        uvs.Add(new Vector2(x, y));
+        uvs.Add(new Vector2(x, y + height));
+        uvs.Add(new Vector2(x + width, y));
+        uvs.Add(new Vector2(x + width, y + height));
+    }
+
+
+    public void SaveChunk(string fileName)
+    {
+        VoxelMapData voxelMapData = new VoxelMapData(voxelMap);
+
+        Debug.Log("Saving Chunk");
+
+        //BinaryFormatter bf = new BinaryFormatter();
+        //FileStream file = File.Create(Application.dataPath + "/" + fileName + ".chunk");
+        //bf.Serialize(file, voxelMapData);
+        //file.Close();
+
+        string json = JsonUtility.ToJson(voxelMapData);
+        File.WriteAllText(Application.streamingAssetsPath + "/Rooms/" + fileName + ".chunk", json);
+        Debug.Log("Saved Chunk as: " + fileName + ".chunk");
+    }
+
+    public void LoadChunk(string fileName)
+    {
+        Debug.Log("Loading Chunk");
+
+        //BinaryFormatter bf = new BinaryFormatter();
+        //FileStream file = File.Open(Application.dataPath + "/" + fileName + ".chunk", FileMode.Open);
+        //object voxelMapData = bf.Deserialize<VoxelMapData>(file);
+        //voxelMapData.
+        //file.Close();
+
+        string json = File.ReadAllText(Application.streamingAssetsPath + "/Rooms/" + fileName + ".chunk");
+        VoxelMapData voxelMapData = new VoxelMapData();
+        voxelMapData.voxelMaps = JsonUtility.FromJson<VoxelMapData>(json).voxelMaps;
+
+        voxelMap = voxelMapData.GetFullVoxelMap();
+        
+
+        CreateMeshData();
+        CreateMesh();
+
+        Debug.Log("Loaded Chunk: " + fileName + ".chunk");
     }
 
 }
@@ -337,9 +414,9 @@ public class ChunkCoord
 
         Vector3 posInt = new Vector3(Mathf.RoundToInt(pos.x), Mathf.RoundToInt(pos.y), Mathf.RoundToInt(pos.z));
 
-        x = (int)posInt.x / VoxelData.chunkSize;
-        y = (int)posInt.y / VoxelData.chunkSize;
-        z = (int)posInt.z / VoxelData.chunkSize;
+        x = (int)posInt.x / VoxelData.chunkSize.x;
+        y = (int)posInt.y / VoxelData.chunkSize.y;
+        z = (int)posInt.z / VoxelData.chunkSize.z;
 
     }
 
@@ -357,7 +434,56 @@ public class ChunkCoord
 
 }
 
+[System.Serializable]
+public class VoxelMapData
+{
+    [SerializeField]
+    public VoxelState[] voxelMaps = new VoxelState[VoxelData.chunkSize.x * VoxelData.chunkSize.y * VoxelData.chunkSize.z];
 
+    public VoxelMapData(VoxelState[,,] voxelStates)
+    {
+        for (int x = 0; x < VoxelData.chunkSize.x; x++)
+        {
+            for (int y = 0; y < VoxelData.chunkSize.y; y++)
+            {
+                for (int z = 0; z < VoxelData.chunkSize.z; z++)
+                {
+                    int index = VoxelData.chunkSize.y * VoxelData.chunkSize.x * z + VoxelData.chunkSize.x * y + x;
+                    voxelMaps[index] = voxelStates[x, y, z];
+                }
+            }
+        }
+    }
+
+    public VoxelMapData()
+    {
+        voxelMaps[0] = new VoxelState(0);
+    }
+
+    public VoxelState[,,] GetFullVoxelMap()
+    {
+
+        VoxelState[,,] fullVoxelMap = new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
+
+        for (int x = 0; x < VoxelData.chunkSize.x; x++)
+        {
+            for (int y = 0; y < VoxelData.chunkSize.y; y++)
+            {
+                for (int z = 0; z < VoxelData.chunkSize.z; z++)
+                {
+                    int index = VoxelData.chunkSize.y * VoxelData.chunkSize.x * z + VoxelData.chunkSize.x * y + x;
+                    fullVoxelMap[x, y, z] = voxelMaps[index];
+                }
+            }
+        }
+
+        return fullVoxelMap;
+    }
+
+}
+
+
+[System.Serializable]
 public class VoxelState
 {
     public int id;

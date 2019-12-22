@@ -5,14 +5,14 @@ using UnityEngine;
 public static class VoxelData
 {
 
-    public static readonly int chunkSize = 12;
-    public static readonly int worldSizeInChunks = 4;
+    public static readonly Vector3Int chunkSize = new Vector3Int(12, 10, 12);
+    public static readonly Vector3Int worldSizeInChunks = new Vector3Int(1, 1, 1);
 
     public static int seed;
 
-    public static int WorldSizeInVoxels
+    public static Vector3Int WorldSizeInVoxels
     {
-        get { return worldSizeInChunks * chunkSize; }
+        get { return (chunkSize * worldSizeInChunks); }
     }
 
     public static readonly int textureAtlasSizeInBlocks = 16; 

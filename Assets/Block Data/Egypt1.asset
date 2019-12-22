@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b09aff04a574167419bf76876217326c, type: 3}
+  m_Name: Egypt1
+  m_EditorClassIdentifier: 
+  blockTextures: {fileID: 2800000, guid: 11e4a17325ba8834c8fdbc4d1b63287d, type: 3}
+  sideFace: 21
+  textureSideFace: {fileID: 0}
+  topBottomFace: 1
+  textureTopBottomFace: {fileID: 0}
+  renderNeighborFaces: 0
+  isSolid: 1
+  name: 

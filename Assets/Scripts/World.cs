@@ -16,10 +16,10 @@ public class World : MonoBehaviour
 
     public Room[] rooms;
 
-    [TableList()]
+    [TableList(), DisableInInlineEditors]
     public BlockType[] blockTypes;
 
-    Chunk[,,] chunks = new Chunk[VoxelData.worldSizeInChunks, VoxelData.worldSizeInChunks, VoxelData.worldSizeInChunks];
+    public Chunk[,,] chunks = new Chunk[VoxelData.worldSizeInChunks.x, VoxelData.worldSizeInChunks.y, VoxelData.worldSizeInChunks.z];
 
     List<ChunkCoord> chunksToCreate = new List<ChunkCoord>();
     public List<Chunk> chunksToUpdate = new List<Chunk>();
@@ -28,11 +28,11 @@ public class World : MonoBehaviour
 
     private void Start()
     {
-        for(int x = 0; x < VoxelData.worldSizeInChunks; x++)
+        for(int x = 0; x < VoxelData.worldSizeInChunks.x; x++)
         {
-            for (int y = 0; y < VoxelData.worldSizeInChunks; y++)
+            for (int y = 0; y < VoxelData.worldSizeInChunks.y; y++)
             {
-                for (int z = 0; z < VoxelData.worldSizeInChunks; z++)
+                for (int z = 0; z < VoxelData.worldSizeInChunks.z; z++)
                 {
                     chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this);
                 }
@@ -40,7 +40,19 @@ public class World : MonoBehaviour
         }
     }
 
+
+    public Chunk GetChunkFromVector3(Vector3 pos)
+    {
+
+        int x = Mathf.FloorToInt(pos.x / VoxelData.chunkSize.x);
+        int y = Mathf.FloorToInt(pos.y / VoxelData.chunkSize.y);
+        int z = Mathf.FloorToInt(pos.z / VoxelData.chunkSize.z);
+        return chunks[x, y, z];
+
+    }
+
 }
+
 
 [System.Serializable]
 public class Room
@@ -74,11 +86,18 @@ public class Room
 public class BlockType
 {
 
-    public int sideFace = 0;
-    public int topBottomFace = 0;
+    [PreviewField(Alignment = Sirenix.OdinInspector.ObjectFieldAlignment.Center)]
+    [VerticalGroup("SideFaces")]
+    public Sprite textureSideFace;
+
+    [PreviewField(Alignment = Sirenix.OdinInspector.ObjectFieldAlignment.Center)]
+    [VerticalGroup("TopBottomFaces")]
+    public Sprite textureTopBottomFace;
 
     public bool renderNeighborFaces = false;
     public bool isSolid = true;
+
+    public string name = "";
 
     public enum FaceType { Side, TopBottom };
 
@@ -87,9 +106,9 @@ public class BlockType
         switch (_faceType)
         {
             case FaceType.Side:
-                return sideFace;
+                return 0;
             case FaceType.TopBottom:
-                return topBottomFace;
+                return 0;
             default:
                 Debug.Log("Error in GetTextureID; invalid face index");
                 return 0;
