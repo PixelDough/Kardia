@@ -6,7 +6,7 @@ using Rewired;
 public class CreativeCam : MonoBehaviour
 {
 
-    public Camera cam;
+    public Cinemachine.CinemachineVirtualCamera cam;
     public Transform selectCube;
     public MenuPanel menu;
     public TMPro.TextMeshProUGUI toolText;
@@ -47,23 +47,44 @@ public class CreativeCam : MonoBehaviour
     private void Update()
     {
 
-        if (player.GetButtonDown(RewiredConsts.Action.OpenMenu)) isMenuOpen = !isMenuOpen;
-        menu.ToggleActive(isMenuOpen);
-
-        if (!isMenuOpen)
+        if (Input.GetKeyDown(KeyCode.P))
         {
-            CameraLook();
-            DoMovement();
-            DoInteraction();
+            GameManager.Instance.isInEditMode = !GameManager.Instance.isInEditMode;
+
+            if (GameManager.Instance.isInEditMode)
+            {
+                world.GetChunkFromVector3(Vector3.zero).DoDespawners();
+                Camera.main.cullingMask |= LayerMask.GetMask("EditorUI");
+                cam.gameObject.SetActive(true);
+            }
+            else
+            {
+                world.GetChunkFromVector3(Vector3.zero).DoSpawners();
+                Camera.main.cullingMask &= ~LayerMask.GetMask("EditorUI");
+                cam.gameObject.SetActive(false);
+            }
         }
-        else
+
+        if (GameManager.Instance.isInEditMode)
         {
+            if (player.GetButtonDown(RewiredConsts.Action.OpenMenu)) isMenuOpen = !isMenuOpen;
+            menu.ToggleActive(isMenuOpen);
 
+            if (!isMenuOpen)
+            {
+                CameraLook();
+                DoMovement();
+                DoInteraction();
+            }
+            else
+            {
+
+            }
+
+            if (player.GetButtonDown(RewiredConsts.Action.Next)) tool = (VoxelTools)Mathf.Repeat((int)tool + 1, (int)VoxelTools.Last);
+            if (player.GetButtonDown(RewiredConsts.Action.Previous)) tool = (VoxelTools)Mathf.Repeat((int)tool - 1, (int)VoxelTools.Last);
+            toolText.text = System.Enum.GetName(typeof(VoxelTools), tool);
         }
-
-        if (player.GetButtonDown(RewiredConsts.Action.Next)) tool = (VoxelTools)Mathf.Repeat((int)tool + 1, (int)VoxelTools.Last);
-        if (player.GetButtonDown(RewiredConsts.Action.Previous)) tool = (VoxelTools)Mathf.Repeat((int)tool - 1, (int)VoxelTools.Last);
-        toolText.text = System.Enum.GetName(typeof(VoxelTools), tool);
 
     }
 
@@ -71,15 +92,7 @@ public class CreativeCam : MonoBehaviour
     {
         RaycastHit hit;
 
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            GameManager.Instance.isInEditMode = !GameManager.Instance.isInEditMode;
-
-            if (GameManager.Instance.isInEditMode) 
-                world.GetChunkFromVector3(Vector3.zero).DoDespawners();
-            else
-                world.GetChunkFromVector3(Vector3.zero).DoSpawners();
-        }
+        
 
         if (Physics.Raycast(transform.position, cam.transform.forward, out hit, 10))
         {

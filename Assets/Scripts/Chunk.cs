@@ -192,7 +192,7 @@ public class Chunk
     }
 
 
-    void ClearMeshData()
+    void ClearMeshData(bool clearSpawners = false)
     {
 
         vertexIndex = 0;
@@ -201,8 +201,12 @@ public class Chunk
         uvs.Clear();
         normals.Clear();
 
-        foreach (Spawner s in spawners) Object.Destroy(s.gameObject);
-        spawners.Clear();
+        //foreach (Spawner s in spawners)
+        //{
+        //    Object.Destroy(s.gameObject);
+        //}
+        //spawners.Clear();
+
 
     }
 
@@ -237,6 +241,18 @@ public class Chunk
         // BLOCKS
         if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.Block)
         {
+
+            foreach (Spawner s in spawners.ToArray())
+            {
+                if (Vector3.Distance(pos, s.position) <= 0.05f)
+                {
+                    spawners.Remove(s);
+                    Object.Destroy(s.gameObject);
+                    
+                }
+                
+            }
+
             for (int p = 0; p < 6; p++)
             {
                 Vector3Int newCheck = new Vector3Int((int)(pos.x + VoxelData.faceChecks[p].x), (int)(pos.y + VoxelData.faceChecks[p].y), (int)(pos.z + VoxelData.faceChecks[p].z));
@@ -297,11 +313,23 @@ public class Chunk
 
         if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.EntitySpawner)
         {
+            
+            
             EntitySpawnerType entitySpawnerType = world.entitySpawnerTypes[voxelMap[x, y, z].id];
 
-            //GameObject selectedObject = entitySpawnerType.prefabSpawnPool[Random.Range(0, entitySpawnerType.prefabSpawnPool.Length)];
-            spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner, pos, Quaternion.identity).GetComponent<Spawner>());
-            voxelMap[x, y, z].spawned = true;
+            bool doCreate = true;
+
+            foreach (Spawner s in spawners.ToArray())
+            {
+                if (Vector3.Distance(pos, s.position) <= 0.05f)
+                {
+                    doCreate = false;
+                }
+            }
+
+            if (doCreate)
+                spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner, pos, Quaternion.identity).GetComponent<Spawner>());
+            //voxelMap[x, y, z].spawned = true;
                 
         }
     }
@@ -499,7 +527,7 @@ public class VoxelState
 {
     public int id = 0;
     public VoxelData.VoxelTypes voxelType = VoxelData.VoxelTypes.Block;
-    public bool spawned = false;
+    //public bool spawned = false;
 
     public VoxelState(int _id)
     {

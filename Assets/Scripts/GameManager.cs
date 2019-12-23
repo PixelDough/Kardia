@@ -8,10 +8,12 @@ public class GameManager : Singleton<GameManager>
 
     public bool isInEditMode = true;
 
+
     private void Start()
     {
         //Instantiate(this);
     }
+
 
 
 

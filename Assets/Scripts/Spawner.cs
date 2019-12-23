@@ -11,7 +11,16 @@ public class Spawner : MonoBehaviour
 
     public GameObject[] spawnPool;
 
+    [HideInInspector] public Vector3 position;
+
     private List<GameObject> spawnedObjects = new List<GameObject>();
+
+
+    private void Start()
+    {
+        position = transform.position;
+    }
+
 
     public void DoSpawn()
     {
@@ -29,6 +38,7 @@ public class Spawner : MonoBehaviour
 
     public void DoDespawn()
     {
+        
         foreach (GameObject o in spawnedObjects)
         {
             Destroy(o.gameObject);

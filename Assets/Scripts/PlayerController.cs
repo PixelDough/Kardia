@@ -61,8 +61,8 @@ public class PlayerController : MonoBehaviour
     private void CameraLook()
     {
         
-        rotation.y += player.GetAxis(RewiredConsts.Action.LookHorizontal) * lookSpeed;
-        rotation.x += player.GetAxis(RewiredConsts.Action.LookVertical) * lookSpeed;
+        rotation.y += player.GetAxis(RewiredConsts.Action.LookHorizontal) * lookSpeed * Time.deltaTime;
+        rotation.x += player.GetAxis(RewiredConsts.Action.LookVertical) * lookSpeed * Time.deltaTime;
 
         rotation.x = Mathf.Clamp(rotation.x, -90, 90);
 
