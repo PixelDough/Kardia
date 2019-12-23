@@ -24,7 +24,7 @@ public class Chunk
     List<int> triangles = new List<int>();
     List<Vector2> uvs = new List<Vector2>();
     List<Vector3> normals = new List<Vector3>();
-    List<GameObject> spawners = new List<GameObject>();
+    List<Spawner> spawners = new List<Spawner>();
 
     VoxelState[,,] voxelMap = new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
 
@@ -159,27 +159,21 @@ public class Chunk
 
     }
 
-    //public void UpdateChunk()
-    //{
+    public void DoSpawners()
+    {
+        foreach(Spawner s in spawners)
+        {
+            s.DoSpawn();
+        }
+    }
 
-    //    ClearMeshData();
-
-    //    for (int y = 0; y < VoxelData.chunkSize; y++)
-    //    {
-    //        for (int x = 0; x < VoxelData.chunkSize; x++)
-    //        {
-    //            for (int z = 0; z < VoxelData.chunkSize; z++)
-    //            {
-
-    //                if (world.blockTypes[voxelMap[x, y, z].id].isSolid)
-    //                    UpdateMeshData(new Vector3(x, y, z));
-
-    //            }
-    //        }
-    //    }
-
-    //    world.chunksToDraw.Enqueue(this);
-    //}
+    public void DoDespawners()
+    {
+        foreach (Spawner s in spawners)
+        {
+            s.DoDespawn();
+        }
+    }
 
 
     public void CreateMesh()
@@ -207,7 +201,7 @@ public class Chunk
         uvs.Clear();
         normals.Clear();
 
-        foreach (GameObject s in spawners) Object.Destroy(s);
+        foreach (Spawner s in spawners) Object.Destroy(s.gameObject);
         spawners.Clear();
 
     }
@@ -252,7 +246,7 @@ public class Chunk
                 if (CheckVoxel(newCheck))
                     neighbor = voxelMap[newCheck.x, newCheck.y, newCheck.z];
 
-                if ((neighbor == null || world.blockTypes[neighbor.id].renderNeighborFaces) && world.blockTypes[blockID].isSolid)
+                if ((neighbor == null || world.blockTypes[neighbor.id].renderNeighborFaces || neighbor.voxelType != VoxelData.VoxelTypes.Block) && world.blockTypes[blockID].isSolid)
                 {
 
                     vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
@@ -305,16 +299,10 @@ public class Chunk
         {
             EntitySpawnerType entitySpawnerType = world.entitySpawnerTypes[voxelMap[x, y, z].id];
 
-            if (true)
-            {
-                int diceRoll = Random.Range(1, 101);
-                if (diceRoll <= entitySpawnerType.chanceToSpawnCheck)
-                {
-                    GameObject selectedObject = entitySpawnerType.prefabSpawnPool[Random.Range(0, entitySpawnerType.prefabSpawnPool.Length)];
-                    spawners.Add(Object.Instantiate(selectedObject, pos, Quaternion.identity));
-                    voxelMap[x, y, z].spawned = true;
-                }
-            }
+            //GameObject selectedObject = entitySpawnerType.prefabSpawnPool[Random.Range(0, entitySpawnerType.prefabSpawnPool.Length)];
+            spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner, pos, Quaternion.identity).GetComponent<Spawner>());
+            voxelMap[x, y, z].spawned = true;
+                
         }
     }
 

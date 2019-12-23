@@ -11,6 +11,9 @@ public class CreativeMenu : MenuPanel
     public GridLayoutGroup blockGroup;
     public BlockSelectButton blockButton;
 
+    public GridLayoutGroup spawnerGroup;
+    public BlockSelectButton spawnerButton;
+
     public List<string> roomFiles;
 
     private void Start()
@@ -30,8 +33,32 @@ public class CreativeMenu : MenuPanel
                 currentButton = Instantiate(blockButton.gameObject, blockGroup.transform).GetComponent<BlockSelectButton>();
         }
 
+        currentButton = spawnerButton;
+
+        for (int i = 0; i < world.entitySpawnerTypes.Length; i++)
+        {
+            currentButton.transform.SetAsLastSibling();
+
+            currentButton.image.sprite = world.entitySpawnerTypes[i].editorIcon;
+            currentButton.blockID = i;
+
+            if (i < world.entitySpawnerTypes.Length - 1)
+                currentButton = Instantiate(spawnerButton.gameObject, spawnerGroup.transform).GetComponent<BlockSelectButton>();
+        }
+
+        spawnerGroup.gameObject.SetActive(false);
+
         UpdateFileNames();
 
+    }
+
+
+    public void SetActiveSelectionMenu(GridLayoutGroup gridLayoutGroup)
+    {
+        blockGroup.gameObject.SetActive(false);
+        spawnerGroup.gameObject.SetActive(false);
+
+        gridLayoutGroup.gameObject.SetActive(true);
     }
 
 
