@@ -20,13 +20,15 @@ public class SaveChunkButton : MonoBehaviour
     public void SaveChunkClicked()
     {
         string path = Path.GetFileNameWithoutExtension(EditorUtility.SaveFilePanel("Load Room File", Application.streamingAssetsPath + "/Rooms", "biome_name", "chunk"));
-        world.chunks[0, 0, 0].SaveChunk(path);
+        if (path.Length != 0) 
+            world.chunks[0, 0, 0].SaveChunk(path);
     }
 
     public void LoadChunkClicked()
     {
         string path = Path.GetFileNameWithoutExtension(EditorUtility.OpenFilePanel("Load Room File", Application.streamingAssetsPath + "/Rooms", "*chunk"));
-        world.chunks[0, 0, 0].LoadChunk(path);
+        if (path.Length != 0)
+            world.chunks[0, 0, 0].LoadChunk(path);
     }
 
     public void ResetChunkClicked()

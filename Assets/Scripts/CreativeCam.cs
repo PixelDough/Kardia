@@ -32,7 +32,7 @@ public class CreativeCam : MonoBehaviour
     bool isMenuOpen = false;
 
     float flySpeed = 8f;
-    float lookSpeed = 75f;
+    float lookSpeed = 150f;
 
     Vector3 rotation = Vector3.zero;
 
@@ -49,26 +49,16 @@ public class CreativeCam : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.P))
         {
-            GameManager.Instance.isInEditMode = !GameManager.Instance.isInEditMode;
-
-            if (GameManager.Instance.isInEditMode)
-            {
-                world.GetChunkFromVector3(Vector3.zero).DoDespawners();
-                Camera.main.cullingMask |= LayerMask.GetMask("EditorUI");
-                cam.gameObject.SetActive(true);
-            }
-            else
-            {
-                world.GetChunkFromVector3(Vector3.zero).DoSpawners();
-                Camera.main.cullingMask &= ~LayerMask.GetMask("EditorUI");
-                cam.gameObject.SetActive(false);
-            }
+            TogglePlayMode();
         }
+
+        
+        if (menu.gameObject.activeSelf != isMenuOpen)
+            menu.ToggleActive(isMenuOpen);
 
         if (GameManager.Instance.isInEditMode)
         {
             if (player.GetButtonDown(RewiredConsts.Action.OpenMenu)) isMenuOpen = !isMenuOpen;
-            menu.ToggleActive(isMenuOpen);
 
             if (!isMenuOpen)
             {
@@ -76,16 +66,36 @@ public class CreativeCam : MonoBehaviour
                 DoMovement();
                 DoInteraction();
             }
-            else
-            {
-
-            }
 
             if (player.GetButtonDown(RewiredConsts.Action.Next)) tool = (VoxelTools)Mathf.Repeat((int)tool + 1, (int)VoxelTools.Last);
             if (player.GetButtonDown(RewiredConsts.Action.Previous)) tool = (VoxelTools)Mathf.Repeat((int)tool - 1, (int)VoxelTools.Last);
             toolText.text = System.Enum.GetName(typeof(VoxelTools), tool);
         }
+        else
+        {
+            if (player.GetButtonDown(RewiredConsts.Action.OpenMenu)) TogglePlayMode();
+        }
 
+    }
+
+    public void TogglePlayMode()
+    {
+        GameManager.Instance.isInEditMode = !GameManager.Instance.isInEditMode;
+
+        if (GameManager.Instance.isInEditMode)
+        {
+            world.GetChunkFromVector3(Vector3.zero).DoDespawners();
+            Camera.main.cullingMask |= LayerMask.GetMask("EditorUI");
+            cam.gameObject.SetActive(true);
+            isMenuOpen = false;
+        }
+        else
+        {
+            world.GetChunkFromVector3(Vector3.zero).DoSpawners();
+            Camera.main.cullingMask &= ~LayerMask.GetMask("EditorUI");
+            cam.gameObject.SetActive(false);
+            isMenuOpen = false;
+        }
     }
 
     private void DoInteraction()

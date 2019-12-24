@@ -50,7 +50,7 @@ public class Chunk
         position = chunkObject.transform.position;
 
         GenerateVoxelMap();
-        
+
 
 
     }
@@ -161,7 +161,7 @@ public class Chunk
 
     public void DoSpawners()
     {
-        foreach(Spawner s in spawners)
+        foreach (Spawner s in spawners)
         {
             s.DoSpawn();
         }
@@ -248,9 +248,9 @@ public class Chunk
                 {
                     spawners.Remove(s);
                     Object.Destroy(s.gameObject);
-                    
+
                 }
-                
+
             }
 
             for (int p = 0; p < 6; p++)
@@ -313,8 +313,8 @@ public class Chunk
 
         if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.EntitySpawner)
         {
-            
-            
+
+
             EntitySpawnerType entitySpawnerType = world.entitySpawnerTypes[voxelMap[x, y, z].id];
 
             bool doCreate = true;
@@ -330,7 +330,7 @@ public class Chunk
             if (doCreate)
                 spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner, pos, Quaternion.identity).GetComponent<Spawner>());
             //voxelMap[x, y, z].spawned = true;
-                
+
         }
     }
 
@@ -413,7 +413,7 @@ public class Chunk
         voxelMapData.voxelMaps = JsonUtility.FromJson<VoxelMapData>(json).voxelMaps;
 
         voxelMap = voxelMapData.GetFullVoxelMap();
-        
+
 
         CreateMeshData();
         CreateMesh();

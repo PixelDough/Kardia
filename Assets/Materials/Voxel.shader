@@ -1,6 +1,6 @@
 ﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
-Shader "Tutorial/015_vertex_manipulation" {
+Shader "Kardia/Voxel" {
     //show values to edit in inspector
     Properties {
         _Color ("Tint", Color) = (0, 0, 0, 1)
@@ -24,7 +24,7 @@ Shader "Tutorial/015_vertex_manipulation" {
         //fullforwardshadows makes sure unity adds the shadow passes the shader might need
         //vertex:vert makes the shader use vert as a vertex shader function
         //addshadows tells the surface shader to generate a new shadow pass based on out vertex shader
-        #pragma surface surf Standard fullforwardshadows vertex:vert addshadow
+        #pragma surface surf Standard fullforwardshadows vertex:vert
         #pragma target 3.0
 
         sampler2D _MainTex;

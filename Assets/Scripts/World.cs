@@ -13,6 +13,7 @@ public class World : MonoBehaviour
     public Vector3 spawn;
 
     public Material material;
+    public Material materialTransparent;
 
     public Room[] rooms;
 

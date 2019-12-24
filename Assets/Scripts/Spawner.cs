@@ -38,7 +38,7 @@ public class Spawner : MonoBehaviour
 
     public void DoDespawn()
     {
-        
+
         foreach (GameObject o in spawnedObjects)
         {
             Destroy(o.gameObject);
