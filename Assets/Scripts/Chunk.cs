@@ -41,6 +41,7 @@ public class Chunk
         meshRenderer = chunkObject.AddComponent<MeshRenderer>();
         meshCollider = chunkObject.AddComponent<MeshCollider>();
         chunkObject.isStatic = true;
+        chunkObject.tag = "Wall";
 
         meshRenderer.material = world.material;
 

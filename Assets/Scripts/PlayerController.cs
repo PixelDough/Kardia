@@ -50,25 +50,6 @@ public class PlayerController : MonoBehaviour
     void DoGravity()
     {
 
-        //RaycastHit hit = new RaycastHit();
-        //Physics.BoxCast(transform.position, new Vector3(playerBodyCollider.size.x, 0.01f, playerBodyCollider.size.z)/2f, Vector3.down, out hit, Quaternion.identity, (Mathf.Abs(velocity.y) * Time.deltaTime) + 0.01f);
-        //Debug.DrawLine(transform.position, transform.position + Vector3.down * ((Mathf.Abs(velocity.y) + 0.01f)), Color.red);
-        //if (hit.collider != null)
-        //{
-
-        //    Debug.Log("Player is on ground! Distance of: " + hit.distance);
-        //    transform.position += Vector3.down * hit.distance;
-        //    velocity.y = 0;
-        //    isGrounded = true;
-        //    return;
-        //}
-        //else
-        //{
-        //    Debug.Log("Player is NOT on ground!");
-        //    velocity.y += gravity;
-        //    isGrounded = false;
-        //}
-
         if (rb.velocity.y < 0)
             rb.AddForce(Vector3.up * gravity * 1.5f, ForceMode.Acceleration);
         else
@@ -76,6 +57,7 @@ public class PlayerController : MonoBehaviour
 
         RaycastHit hit;
         Vector3 skinDistance = (Vector3.up * 0.01f);
+
         Ray[] rays = new Ray[4];
         rays[0] = new Ray(transform.position + skinDistance + new Vector3(-playerBodyCollider.size.x / 2f, 0f, -playerBodyCollider.size.z / 2f), Vector3.down);
         rays[1] = new Ray(transform.position + skinDistance + new Vector3(playerBodyCollider.size.x / 2f, 0f, -playerBodyCollider.size.z / 2f), Vector3.down);
@@ -147,16 +129,14 @@ public class PlayerController : MonoBehaviour
         {
             Debug.Log("Jumped!");
             rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-            rb.AddForce(Vector3.up * jumpSpeed, ForceMode.Acceleration);
+            //rb.AddForce(Vector3.up * jumpSpeed, ForceMode.Acceleration);
+            rb.AddForce(Vector3.up * CalculateJumpSpeed(1.25f, gravity), ForceMode.VelocityChange);
         }
 
+        //rb.velocity = Vector3.Lerp(rb.velocity, (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y, 0.1f);
+        rb.velocity = (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y;
 
-        //finalMovementVector.y = velocity.y;
-
-        // velocity = new Vector3(finalMovementVector.x, rb.velocity.y, finalMovementVector.z);
-
-        //rb.velocity = new Vector3(finalMovementVector.x, rb.velocity.y + gravity, finalMovementVector.z) * Time.deltaTime;
-        rb.velocity = (finalMovementVector * Time.deltaTime) + Vector3.up * rb.velocity.y;
+        //transform.position += finalMovementVector * Time.fixedDeltaTime;
     }
 
     private void CameraLook()
@@ -169,6 +149,12 @@ public class PlayerController : MonoBehaviour
 
         playerBody.transform.localRotation = Quaternion.Euler(0, rotation.y, 0);
         playerHead.transform.localRotation = Quaternion.Euler(rotation.x, 0, 0);
+    }
+
+    // Calculate the initial velocity of a jump based off gravity and desired maximum height attained
+    private float CalculateJumpSpeed(float jumpHeight, float gravity)
+    {
+        return Mathf.Sqrt(2 * jumpHeight * Mathf.Abs(gravity));
     }
 
 }
