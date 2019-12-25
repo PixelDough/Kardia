@@ -133,10 +133,9 @@ public class PlayerController : MonoBehaviour
             rb.AddForce(Vector3.up * CalculateJumpSpeed(1.25f, gravity), ForceMode.VelocityChange);
         }
 
-        //rb.velocity = Vector3.Lerp(rb.velocity, (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y, 0.1f);
-        rb.velocity = (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y;
+        rb.velocity = Vector3.Lerp(rb.velocity, (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y, 0.1f);
+        //rb.velocity = (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y;
 
-        //transform.position += finalMovementVector * Time.fixedDeltaTime;
     }
 
     private void CameraLook()

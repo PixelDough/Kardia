@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &7579480239429247146
+--- !u!1001 &5637296246007724386
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -10,7 +10,7 @@ PrefabInstance:
     - target: {fileID: 7575156924651741741, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
       propertyPath: m_Name
-      value: Entity Spawner (Player)
+      value: Entity Spawner (Item)
       objectReference: {fileID: 0}
     - target: {fileID: 7575156924651741743, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
@@ -76,48 +76,58 @@ PrefabInstance:
         type: 3}
       propertyPath: spawnPool.Array.data[0]
       value: 
-      objectReference: {fileID: 4166252905500896336, guid: d273a68705e41b141b1745527826c73f,
+      objectReference: {fileID: 9024318894882876723, guid: 3952926ca709bb8458fa265e7e9f607b,
         type: 3}
-    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
-        type: 3}
-      propertyPath: chanceToSpawnCheck
-      value: 100
-      objectReference: {fileID: 0}
     - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
       propertyPath: spawnOnGround
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 3486697480987722480, guid: fc7f4915ad3a65d43b8674fffa409388,
+    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
+      propertyPath: randomPositionAddition.x
+      value: 0.25
       objectReference: {fileID: 0}
-    - target: {fileID: 3486697480987722480, guid: fc7f4915ad3a65d43b8674fffa409388,
+    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
+      propertyPath: randomPositionAddition.z
+      value: 0.25
       objectReference: {fileID: 0}
-    - target: {fileID: 3486697480987722480, guid: fc7f4915ad3a65d43b8674fffa409388,
+    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
+      propertyPath: chanceToSpawnCheck
+      value: 25
       objectReference: {fileID: 0}
-    - target: {fileID: 3486697480987722480, guid: fc7f4915ad3a65d43b8674fffa409388,
+    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
-      propertyPath: m_LocalRotation.w
+      propertyPath: randomRotation.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
+        type: 3}
+      propertyPath: randomRotationRange.y
+      value: 360
+      objectReference: {fileID: 0}
+    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
+        type: 3}
+      propertyPath: randomPositionRange.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
+        type: 3}
+      propertyPath: randomPositionRange.z
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
+        type: 3}
+      propertyPath: accomodateForVertexWobble
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4371660188384516073, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 1373138538389010280, guid: 57aae5347792c2546999cf2b5573e0b3,
+      objectReference: {fileID: 1561194561307949111, guid: 57aae5347792c2546999cf2b5573e0b3,
         type: 3}
-    - target: {fileID: 7101532521442540776, guid: fc7f4915ad3a65d43b8674fffa409388,
-        type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fc7f4915ad3a65d43b8674fffa409388, type: 3}

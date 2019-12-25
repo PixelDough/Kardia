@@ -15,9 +15,9 @@ Shader "Kardia/BillboardSprite"
 	{
 		LOD 0
 
-		Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" "PreviewType"="Plane" "CanUseSpriteAtlas"="True" }
+		Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" "PreviewType"="Plane" "CanUseSpriteAtlas"="True" "DisableBatching"="True" }
 
-		Cull Off
+		Cull Back
 		Lighting Off
 		ZWrite Off
 		Blend One OneMinusSrcAlpha
@@ -80,7 +80,7 @@ Shader "Kardia/BillboardSprite"
 				//Need to nullify rotation inserted by generated surface shader;
 				IN.vertex = mul( unity_WorldToObject, IN.vertex );
 				
-				IN.vertex.xyz += ( ( 0 + IN.vertex.xyz ) * 0.1 ); 
+				IN.vertex.xyz += ( ( 0 + ( IN.vertex.xyz * 2 ) ) * 0.1 ); 
 				OUT.vertex = UnityObjectToClipPos(IN.vertex);
 				OUT.texcoord = IN.texcoord;
 				OUT.color = IN.color * _Color;
@@ -120,17 +120,19 @@ Shader "Kardia/BillboardSprite"
 }
 /*ASEBEGIN
 Version=17500
-0;666;1499;335;871.4132;213.7393;1.46871;True;True
-Node;AmplifyShaderEditor.BillboardNode;12;-391.9951,-87.15485;Inherit;False;Spherical;True;0;1;FLOAT3;0
+0;681;1361;320;885.5786;228.9697;1.46871;True;True
 Node;AmplifyShaderEditor.PosVertexDataNode;13;-397.9951,24.8452;Inherit;False;0;0;5;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
-Node;AmplifyShaderEditor.SimpleAddOpNode;14;-139.225,-40.25876;Inherit;False;2;2;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;1;FLOAT3;0
-Node;AmplifyShaderEditor.RangedFloatNode;16;-105.225,74.74124;Inherit;False;Constant;_Float0;Float 0;0;0;Create;True;0;0;False;0;0.1;0;0;0;0;1;FLOAT;0
-Node;AmplifyShaderEditor.SimpleMultiplyOpNode;15;77.77502,-26.25876;Inherit;False;2;2;0;FLOAT3;0,0,0;False;1;FLOAT;0;False;1;FLOAT3;0
-Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;11;384.6482,-83.11551;Float;False;True;-1;2;ASEMaterialInspector;0;6;Kardia/BillboardSprite;0f8ba0101102bb14ebf021ddadce9b49;True;SubShader 0 Pass 0;0;0;SubShader 0 Pass 0;2;True;3;1;False;-1;10;False;-1;0;1;False;-1;0;False;-1;False;False;True;2;False;-1;False;False;True;2;False;-1;False;False;True;5;Queue=Transparent=Queue=0;IgnoreProjector=True;RenderType=Transparent=RenderType;PreviewType=Plane;CanUseSpriteAtlas=True;False;0;False;False;False;False;False;False;False;False;False;False;True;2;0;;0;0;Standard;0;0;1;True;False;;0
+Node;AmplifyShaderEditor.BillboardNode;12;-391.9951,-87.15485;Inherit;False;Spherical;True;0;1;FLOAT3;0
+Node;AmplifyShaderEditor.ScaleNode;22;-152.7049,85.32764;Inherit;False;2;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0
+Node;AmplifyShaderEditor.SimpleAddOpNode;14;13.52084,-43.19617;Inherit;False;2;2;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;1;FLOAT3;0
+Node;AmplifyShaderEditor.RangedFloatNode;16;47.52085,71.80383;Inherit;False;Constant;_Float0;Float 0;0;0;Create;True;0;0;False;0;0.1;0;0;0;0;1;FLOAT;0
+Node;AmplifyShaderEditor.SimpleMultiplyOpNode;15;230.5208,-29.19618;Inherit;False;2;2;0;FLOAT3;0,0,0;False;1;FLOAT;0;False;1;FLOAT3;0
+Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;25;421.366,-180.0504;Float;False;True;-1;2;ASEMaterialInspector;0;6;Kardia/BillboardSprite;0f8ba0101102bb14ebf021ddadce9b49;True;SubShader 0 Pass 0;0;0;SubShader 0 Pass 0;2;True;3;1;False;-1;10;False;-1;0;1;False;-1;1;False;-1;False;False;True;0;False;-1;False;False;True;2;False;-1;False;False;True;6;Queue=Transparent=Queue=0;IgnoreProjector=True;RenderType=Transparent=RenderType;PreviewType=Plane;CanUseSpriteAtlas=True;DisableBatching=True;False;0;False;False;False;False;False;False;False;False;False;False;True;2;0;;0;0;Standard;0;0;1;True;False;;0
+WireConnection;22;0;13;0
 WireConnection;14;0;12;0
-WireConnection;14;1;13;0
+WireConnection;14;1;22;0
 WireConnection;15;0;14;0
 WireConnection;15;1;16;0
-WireConnection;11;1;15;0
+WireConnection;25;1;15;0
 ASEEND*/
-//CHKSM=BEC9529495CDD03AE4CD0B7C25198E9982D24561
+//CHKSM=B75252174DE7C17DC8E0D24567978C68909839CE

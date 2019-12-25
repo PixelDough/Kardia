@@ -8,6 +8,10 @@ public class Spawner : MonoBehaviour
 
     [Range(0, 100)]
     public int chanceToSpawnCheck = 100;
+    public bool spawnOnGround = false;
+    public bool accomodateForVertexWobble = false;
+    public Vector3 randomPositionRange = Vector3.zero;
+    public Vector3 randomRotationRange = Vector3.zero;
 
     public GameObject[] spawnPool;
 
@@ -31,7 +35,14 @@ public class Spawner : MonoBehaviour
         int diceRoll = Random.Range(1, 101);
         if (diceRoll <= chanceToSpawnCheck)
         {
-            spawnedObjects.Add(Instantiate(spawnPool[Random.Range(0, spawnPool.Length)], transform.position + (Vector3.one * 0.5f), Quaternion.identity));
+            Vector3 pos = transform.position + (Vector3.one * 0.5f);
+            if (spawnOnGround) pos += Vector3.down * 0.5f;
+            pos += new Vector3(Random.Range(-randomPositionRange.x / 2f, randomPositionRange.x / 2f), Random.Range(-randomPositionRange.y / 2f, randomPositionRange.y / 2f), Random.Range(-randomPositionRange.z / 2f, randomPositionRange.z / 2f));
+            if (accomodateForVertexWobble) pos += Vector3.up * 0.02f;
+
+            Quaternion rot = Quaternion.Euler(Random.Range(-randomRotationRange.x / 2f, randomRotationRange.x / 2f), Random.Range(-randomRotationRange.y / 2f, randomRotationRange.y / 2f), Random.Range(-randomRotationRange.z / 2f, randomRotationRange.z / 2f));
+
+            spawnedObjects.Add(Instantiate(spawnPool[Random.Range(0, spawnPool.Length)], pos, rot));
         }
 
     }

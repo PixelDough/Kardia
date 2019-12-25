@@ -92,5 +92,11 @@ PrefabInstance:
       propertyPath: ShapeModule.m_Scale.z
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 5095892637137008781, guid: a1135cd1ff8b2a64e9437bbb766e6df0,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -4033808980973618217, guid: 57aae5347792c2546999cf2b5573e0b3,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a1135cd1ff8b2a64e9437bbb766e6df0, type: 3}
