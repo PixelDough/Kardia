@@ -120,7 +120,7 @@ Shader "Kardia/BillboardSprite"
 }
 /*ASEBEGIN
 Version=17500
-0;681;1361;320;885.5786;228.9697;1.46871;True;True
+0;681;1361;320;851.2615;283.9613;1.46871;True;False
 Node;AmplifyShaderEditor.PosVertexDataNode;13;-397.9951,24.8452;Inherit;False;0;0;5;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
 Node;AmplifyShaderEditor.BillboardNode;12;-391.9951,-87.15485;Inherit;False;Spherical;True;0;1;FLOAT3;0
 Node;AmplifyShaderEditor.ScaleNode;22;-152.7049,85.32764;Inherit;False;2;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0
@@ -135,4 +135,4 @@ WireConnection;15;0;14;0
 WireConnection;15;1;16;0
 WireConnection;25;1;15;0
 ASEEND*/
-//CHKSM=B75252174DE7C17DC8E0D24567978C68909839CE
+//CHKSM=B60F6E24F277473ECB4E1CD5D0D675B73C773ECA

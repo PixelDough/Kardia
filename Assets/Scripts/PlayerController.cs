@@ -11,10 +11,17 @@ public class PlayerController : MonoBehaviour
     public BoxCollider playerBodyCollider;
     public BoxCollider playerCrawlCollider;
 
+    public Cinemachine.CinemachineVirtualCamera mainVCam;
+    public Cinemachine.CinemachineVirtualCamera leanVCam;
+
     public float walkSpeed = 5f;
     public float lookSpeed = 5f;
     public float gravity = -19.6f;
     public float jumpSpeed = 900;
+
+    float jumpBufferTime;
+    float jumpBuffer = 0.1f;
+    bool canJumpBuffer = false;
 
     bool isGrounded = false;
     bool isCrawling = false;
@@ -45,6 +52,15 @@ public class PlayerController : MonoBehaviour
     {
         DoMovement();
 
+        if (Time.time > jumpBufferTime)
+        {
+            canJumpBuffer = false;
+        }
+        else
+        {
+            canJumpBuffer = true;
+        }
+
     }
 
     void DoGravity()
@@ -55,26 +71,26 @@ public class PlayerController : MonoBehaviour
         else
             rb.AddForce(Vector3.up * gravity, ForceMode.Acceleration);
 
-        RaycastHit hit;
-        Vector3 skinDistance = (Vector3.up * 0.01f);
+        //RaycastHit hit;
+        //Vector3 skinDistance = (Vector3.up * 0.01f);
 
-        Ray[] rays = new Ray[4];
-        rays[0] = new Ray(transform.position + skinDistance + new Vector3(-playerBodyCollider.size.x / 2f, 0f, -playerBodyCollider.size.z / 2f), Vector3.down);
-        rays[1] = new Ray(transform.position + skinDistance + new Vector3(playerBodyCollider.size.x / 2f, 0f, -playerBodyCollider.size.z / 2f), Vector3.down);
-        rays[2] = new Ray(transform.position + skinDistance + new Vector3(-playerBodyCollider.size.x / 2f, 0f, playerBodyCollider.size.z / 2f), Vector3.down);
-        rays[3] = new Ray(transform.position + skinDistance + new Vector3(playerBodyCollider.size.x / 2f, 0f, playerBodyCollider.size.z / 2f), Vector3.down);
+        //Ray[] rays = new Ray[4];
+        //rays[0] = new Ray(transform.position + skinDistance + new Vector3(-playerBodyCollider.size.x / 2f, 0f, -playerBodyCollider.size.z / 2f), Vector3.down);
+        //rays[1] = new Ray(transform.position + skinDistance + new Vector3(playerBodyCollider.size.x / 2f, 0f, -playerBodyCollider.size.z / 2f), Vector3.down);
+        //rays[2] = new Ray(transform.position + skinDistance + new Vector3(-playerBodyCollider.size.x / 2f, 0f, playerBodyCollider.size.z / 2f), Vector3.down);
+        //rays[3] = new Ray(transform.position + skinDistance + new Vector3(playerBodyCollider.size.x / 2f, 0f, playerBodyCollider.size.z / 2f), Vector3.down);
 
-        bool hitOne = false;
+        //bool hitOne = false;
 
-        foreach (Ray r in rays)
-        {
-            if (Physics.Raycast(r, 0.02f))
-            {
-                hitOne = true;
-            }
-        }
+        //foreach (Ray r in rays)
+        //{
+        //    if (Physics.Raycast(r, 0.02f, LayerMask.GetMask("Wall")))
+        //    {
+        //        hitOne = true;
+        //    }
+        //}
 
-        isGrounded = hitOne;
+        ////isGrounded = hitOne;
     }
 
     private void DoMovement()
@@ -99,14 +115,27 @@ public class PlayerController : MonoBehaviour
         {
             playerBodyCollider.gameObject.SetActive(false);
             playerCrawlCollider.gameObject.SetActive(true);
-            playerHead.localPosition = Vector3.MoveTowards(playerHead.localPosition, new Vector3(0, -0.3f, 0), 0.04f);
+            playerHead.localPosition = Vector3.MoveTowards(playerHead.localPosition, new Vector3(0, -0.5f, 0), 0.05f);
         }
         else
         {
             playerBodyCollider.gameObject.SetActive(true);
             playerCrawlCollider.gameObject.SetActive(false);
-            playerHead.localPosition = Vector3.MoveTowards(playerHead.localPosition, new Vector3(0, 0.3f, 0), 0.04f);
+            playerHead.localPosition = Vector3.MoveTowards(playerHead.localPosition, new Vector3(0, 0.6f, 0), 0.05f);
         }
+
+        // Neck movements
+        //if (player.GetAxis(RewiredConsts.Action.Lean) != 0f)
+        //{
+        //    leanVCam.gameObject.SetActive(true);
+        //    mainVCam.gameObject.SetActive(false);
+        //}
+        //else
+        //{
+        //    leanVCam.gameObject.SetActive(false);
+        //    mainVCam.gameObject.SetActive(true);
+        //}
+
 
         Vector3 input = Vector3.zero;
         input.x = player.GetAxis(RewiredConsts.Action.MoveX);
@@ -125,12 +154,14 @@ public class PlayerController : MonoBehaviour
 
         DoGravity();
 
-        if (player.GetButtonDown(RewiredConsts.Action.Jump) && isGrounded)
+        if (player.GetButtonDown(RewiredConsts.Action.Jump) && canJumpBuffer)
         {
             Debug.Log("Jumped!");
             rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
             //rb.AddForce(Vector3.up * jumpSpeed, ForceMode.Acceleration);
             rb.AddForce(Vector3.up * CalculateJumpSpeed(1.25f, gravity), ForceMode.VelocityChange);
+
+            jumpBufferTime -= 100f;
         }
 
         rb.velocity = Vector3.Lerp(rb.velocity, (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y, 0.1f);
@@ -154,6 +185,25 @@ public class PlayerController : MonoBehaviour
     private float CalculateJumpSpeed(float jumpHeight, float gravity)
     {
         return Mathf.Sqrt(2 * jumpHeight * Mathf.Abs(gravity));
+    }
+
+
+    void OnCollisionStay(Collision collisionInfo)
+    {
+        // Debug-draw all contact points and normals
+        foreach (ContactPoint contact in collisionInfo.contacts)
+        {
+            Debug.DrawRay(contact.point, contact.normal, Color.white);
+            if (contact.otherCollider.gameObject.CompareTag("Wall"))
+            {
+                Debug.Log("ON COLLISION STAY");
+                if (contact.normal == Vector3.up)
+                {
+                    isGrounded = true;
+                    jumpBufferTime = Time.time + jumpBuffer;
+                }
+            }
+        }
     }
 
 }
