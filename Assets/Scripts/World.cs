@@ -34,13 +34,14 @@ public class World : MonoBehaviour
 
     private void Start()
     {
+
         for(int x = 0; x < VoxelData.worldSizeInChunks.x; x++)
         {
             for (int y = 0; y < VoxelData.worldSizeInChunks.y; y++)
             {
                 for (int z = 0; z < VoxelData.worldSizeInChunks.z; z++)
                 {
-                    chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this);
+                    chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this, (VoxelData.worldSizeInChunks.x > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x-1 || y == 0 || y == VoxelData.worldSizeInChunks.y-1 || z == 0 || z == VoxelData.worldSizeInChunks.z-1));
                 }
             }
         }

@@ -9,6 +9,7 @@ public class Chunk
 {
 
     public ChunkCoord coord;
+    public bool isBorderChunk;
 
     bool isVoxelMapPopulated = false;
     private bool _isActive = false;
@@ -31,11 +32,12 @@ public class Chunk
 
     World world;
 
-    public Chunk(ChunkCoord _coord, World _world)
+    public Chunk(ChunkCoord _coord, World _world, bool _isBorderChunk = false)
     {
 
         coord = _coord;
         world = _world;
+        isBorderChunk = _isBorderChunk;
 
         chunkObject = new GameObject();
         meshFilter = chunkObject.AddComponent<MeshFilter>();
@@ -54,10 +56,12 @@ public class Chunk
 
         GenerateVoxelMap();
 
-        string[] chunkFiles = Directory.GetFiles(Application.streamingAssetsPath + "/Rooms", "tomb_*.chunk");
-        string selectedChunkFile = Path.GetFileNameWithoutExtension(chunkFiles[Random.Range(0, chunkFiles.Length)]);
+        if (!isBorderChunk)
+        {
+            string[] chunkFiles = Directory.GetFiles(Application.streamingAssetsPath + "/Rooms", "tomb_*.chunk");
+            string selectedChunkFile = Path.GetFileNameWithoutExtension(chunkFiles[Random.Range(0, chunkFiles.Length)]);
             LoadChunk(selectedChunkFile);
-
+        }
 
 
     }
@@ -76,9 +80,16 @@ public class Chunk
             {
                 for (int z = 0; z < VoxelData.chunkSize.z; z++)
                 {
-                    //voxelMap[x, y, z] = new VoxelState(Random.Range(1, world.blockTypes.Length));
-                    if ((x == 0 || x == VoxelData.chunkSize.x - 1) || (y == 0 || y == VoxelData.chunkSize.y - 1) || (z == 0 || z == VoxelData.chunkSize.z - 1)) voxelMap[x, y, z] = new VoxelState(1);
-                    else voxelMap[x, y, z] = new VoxelState(0);
+                    if (!isBorderChunk)
+                    {
+                        //voxelMap[x, y, z] = new VoxelState(Random.Range(1, world.blockTypes.Length));
+                        if ((x == 0 || x == VoxelData.chunkSize.x - 1) || (y == 0 || y == VoxelData.chunkSize.y - 1) || (z == 0 || z == VoxelData.chunkSize.z - 1)) voxelMap[x, y, z] = new VoxelState(1);
+                        else voxelMap[x, y, z] = new VoxelState(0);
+                    }
+                    else
+                    {
+                        voxelMap[x, y, z] = new VoxelState(10);
+                    }
                 }
             }
         }

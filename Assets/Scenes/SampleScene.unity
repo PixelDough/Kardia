@@ -17,7 +17,7 @@ RenderSettings:
   m_Fog: 1
   m_FogColor: {r: 0.65882355, g: 0.43580773, b: 0.3647059, a: 1}
   m_FogMode: 2
-  m_FogDensity: 0.06
+  m_FogDensity: 0.1
   m_LinearFogStart: 10
   m_LinearFogEnd: 15
   m_AmbientSkyColor: {r: 0.1981132, g: 0.11872872, b: 0.10559807, a: 1}
@@ -507,7 +507,7 @@ MonoBehaviour:
       type: 3}
     textureTopBottomFace: {fileID: 7010138011366478569, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
-    renderNeighborFaces: 1
+    renderNeighborFaces: 0
     isSolid: 1
     name: 
   entitySpawnerTypes:
@@ -2616,7 +2616,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.01
-  far clip plane: 5000
+  far clip plane: 30
   field of view: 90
   orthographic: 0
   orthographic size: 5
@@ -4337,6 +4337,10 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1110060195, guid: 90d09604a9574b945a61cf4dc3f32d57, type: 3}
+      propertyPath: m_Lens.FarClipPlane
+      value: 30
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 90d09604a9574b945a61cf4dc3f32d57, type: 3}

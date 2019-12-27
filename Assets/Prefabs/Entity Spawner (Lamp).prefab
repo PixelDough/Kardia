@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8687817920962527730}
   - component: {fileID: 7592816679060782697}
+  - component: {fileID: 2625244705978423792}
   m_Layer: 0
   m_Name: Point Light
   m_TagString: Untagged
@@ -48,7 +49,7 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 0
+    m_Type: 1
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -91,6 +92,19 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!114 &2625244705978423792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3869744502976600907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c335cbf732dd0e46b8d77f9b9dbb58e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  availableDistance: 15
 --- !u!1001 &2168602278830951704
 PrefabInstance:
   m_ObjectHideFlags: 0
