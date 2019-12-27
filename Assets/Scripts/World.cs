@@ -12,6 +12,8 @@ public class World : MonoBehaviour
     public Transform player;
     public Vector3 spawn;
 
+    public GameObject climbZonePrefab;
+
     public Material material;
     public Material materialTransparent;
 

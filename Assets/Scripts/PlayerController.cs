@@ -11,6 +11,12 @@ public class PlayerController : MonoBehaviour
     public BoxCollider playerBodyCollider;
     public BoxCollider playerCrawlCollider;
 
+    [Header("Climb Positions")]
+    public Transform climbPositionHead;
+    public Transform climbPositionFeet;
+
+    [Header("Others")]
+
     public Cinemachine.CinemachineVirtualCamera mainVCam;
     public Cinemachine.CinemachineVirtualCamera leanVCam;
 
@@ -19,12 +25,21 @@ public class PlayerController : MonoBehaviour
     public float gravity = -19.6f;
     public float jumpSpeed = 900;
 
+    World world;
+
     float jumpBufferTime;
     float jumpBuffer = 0.1f;
     bool canJumpBuffer = false;
 
     bool isGrounded = false;
     bool isCrawling = false;
+
+    bool canStartClimb = true;
+    bool climbStarted = false;
+    bool climbWallAboveHead = false;
+    bool climbWallAtFeet = false;
+    bool isClimbing = false;
+    float climbEndY = float.MinValue;
 
     Vector3 rotation = Vector3.zero;
 
@@ -38,7 +53,8 @@ public class PlayerController : MonoBehaviour
         player = ReInput.players.GetPlayer(0);
         rb = GetComponent<Rigidbody>();
 
-        
+        world = FindObjectOfType<World>();
+
     }
 
     private void LateUpdate()
@@ -71,45 +87,43 @@ public class PlayerController : MonoBehaviour
         else
             rb.AddForce(Vector3.up * gravity, ForceMode.Acceleration);
 
-        //RaycastHit hit;
-        //Vector3 skinDistance = (Vector3.up * 0.01f);
-
-        //Ray[] rays = new Ray[4];
-        //rays[0] = new Ray(transform.position + skinDistance + new Vector3(-playerBodyCollider.size.x / 2f, 0f, -playerBodyCollider.size.z / 2f), Vector3.down);
-        //rays[1] = new Ray(transform.position + skinDistance + new Vector3(playerBodyCollider.size.x / 2f, 0f, -playerBodyCollider.size.z / 2f), Vector3.down);
-        //rays[2] = new Ray(transform.position + skinDistance + new Vector3(-playerBodyCollider.size.x / 2f, 0f, playerBodyCollider.size.z / 2f), Vector3.down);
-        //rays[3] = new Ray(transform.position + skinDistance + new Vector3(playerBodyCollider.size.x / 2f, 0f, playerBodyCollider.size.z / 2f), Vector3.down);
-
-        //bool hitOne = false;
-
-        //foreach (Ray r in rays)
-        //{
-        //    if (Physics.Raycast(r, 0.02f, LayerMask.GetMask("Wall")))
-        //    {
-        //        hitOne = true;
-        //    }
-        //}
-
-        ////isGrounded = hitOne;
     }
+
+    private void ToggleCrouch()
+    {
+        ToggleCrouch(!isCrawling);
+    }
+
+
+    private void ToggleCrouch(bool toggleState)
+    {
+        isCrawling = toggleState;
+        if (!isCrawling)
+        {
+            RaycastHit[] hits = new RaycastHit[10];
+            hits = rb.SweepTestAll(Vector3.up, 1f, QueryTriggerInteraction.Ignore);
+            foreach (RaycastHit hit in hits)
+            {
+                if (hit.transform.gameObject.tag == "Wall")
+                    isCrawling = true;
+            }
+        }
+    }
+
 
     private void DoMovement()
     {
 
         if (player.GetButtonDown(RewiredConsts.Action.Crawl))
         {
-            isCrawling = !isCrawling;
-            RaycastHit[] hits = new RaycastHit[10];
-            if (!isCrawling)
-            {
-                hits = rb.SweepTestAll(Vector3.up, 1f, QueryTriggerInteraction.Ignore);
-                foreach (RaycastHit hit in hits)
-                {
-                    if (hit.transform.gameObject.tag == "Wall")
-                        isCrawling = true;
-                }
-            }
+            ToggleCrouch();
         }
+
+        if (player.GetButtonDown(RewiredConsts.Action.Sprint) && isCrawling)
+        {
+            ToggleCrouch(false);
+        }
+            
 
         if (isCrawling)
         {
@@ -152,7 +166,34 @@ public class PlayerController : MonoBehaviour
 
         Vector3 finalMovementVector = (input * speedMultiplier);
 
-        DoGravity();
+        //DoClimbing();
+
+        //if (rb.velocity.y < -0.1f && player.GetButton(RewiredConsts.Action.Jump))
+        //{
+        //    // Check variables to see if we can start a climb.
+        //    if (canStartClimb)
+        //    {
+        //        if (transform.position.y < climbEndY)
+        //        {
+        //            Debug.Log("Climb Started!");
+        //            isClimbing = true;
+        //        }
+        //    }
+        //}
+
+        //if (isClimbing)
+        //{
+        //    rb.velocity = new Vector3(0f, 0f, 0f);
+        //    rb.AddForce(Vector3.up * 5f, ForceMode.VelocityChange);
+
+        //    //if (!climbWallAtFeet)
+        //    //{
+        //    //    isClimbing = false;
+        //    //}
+        //}
+
+
+        if (!isClimbing) DoGravity();
 
         if (player.GetButtonDown(RewiredConsts.Action.Jump) && canJumpBuffer)
         {
@@ -164,9 +205,77 @@ public class PlayerController : MonoBehaviour
             jumpBufferTime -= 100f;
         }
 
-        rb.velocity = Vector3.Lerp(rb.velocity, (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y, 0.1f);
+        if (!isClimbing)
+            rb.velocity = Vector3.Lerp(rb.velocity, (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y, 0.1f);
         //rb.velocity = (finalMovementVector * Time.fixedDeltaTime) + Vector3.up * rb.velocity.y;
 
+    }
+
+    private void DoClimbing()
+    {
+        if ((rb.velocity.y < -0.1f || isClimbing) && canStartClimb)
+        {
+            Vector3 direction = NearestWorldAxis(climbPositionHead.forward);
+
+            Ray faceLeft = new Ray(climbPositionHead.position + (-climbPositionHead.right * playerBodyCollider.size.x / 2), direction);
+            Ray faceRight = new Ray(climbPositionHead.position + (climbPositionHead.right * playerBodyCollider.size.x / 2), direction);
+            Ray feetLeft = new Ray(climbPositionFeet.position + (-climbPositionFeet.right * playerBodyCollider.size.x / 2), direction);
+            Ray feetRight = new Ray(climbPositionFeet.position + (climbPositionFeet.right * playerBodyCollider.size.x / 2), direction);
+
+            Debug.DrawRay(faceLeft.origin, faceLeft.direction * 0.2f, Color.green);
+            Debug.DrawRay(faceRight.origin, faceRight.direction * 0.2f, Color.green);
+            Debug.DrawRay(feetLeft.origin, feetLeft.direction * 0.2f, Color.green);
+            Debug.DrawRay(feetRight.origin, feetRight.direction * 0.2f, Color.green);
+
+            if (Physics.Raycast(feetLeft, 0.2f, LayerMask.GetMask("Wall")) || Physics.Raycast(feetRight, 0.2f, LayerMask.GetMask("Wall")))
+            {
+                if (!Physics.Raycast(faceLeft, 0.2f, LayerMask.GetMask("Wall")) && !Physics.Raycast(faceRight, 0.2f, LayerMask.GetMask("Wall")))
+                {
+                    if (player.GetButton(RewiredConsts.Action.Jump))
+                    {
+                        isClimbing = true;
+                        rb.velocity = new Vector3(0f, 0f, 0f);
+                        rb.AddForce(Vector3.up * 5f, ForceMode.VelocityChange);
+                        //rb.AddForce(playerBody.forward * 5f, ForceMode.VelocityChange);
+                    }
+                }
+            }
+            else
+            {
+                isClimbing = false;
+                canStartClimb = false;
+            }
+        }
+    }
+
+    private void DoClimbing(Vector3 wallNormal)
+    {
+
+    }
+
+    private static Vector3 NearestWorldAxis(Vector3 v)
+    {
+        v.x = Mathf.Round(v.x);
+        v.y = Mathf.Round(v.y);
+        v.z = Mathf.Round(v.z);
+
+        if (Mathf.Abs(v.x) < Mathf.Abs(v.y))
+        {
+            v.x = 0;
+            if (Mathf.Abs(v.y) < Mathf.Abs(v.z))
+                v.y = 0;
+            else
+                v.z = 0;
+        }
+        else
+        {
+            v.y = 0;
+            if (Mathf.Abs(v.x) < Mathf.Abs(v.z))
+                v.x = 0;
+            else
+                v.z = 0;
+        }
+        return v;
     }
 
     private void CameraLook()
@@ -190,20 +299,78 @@ public class PlayerController : MonoBehaviour
 
     void OnCollisionStay(Collision collisionInfo)
     {
+
+        climbWallAboveHead = false;
+        climbWallAtFeet = false;
+
         // Debug-draw all contact points and normals
         foreach (ContactPoint contact in collisionInfo.contacts)
         {
             Debug.DrawRay(contact.point, contact.normal, Color.white);
             if (contact.otherCollider.gameObject.CompareTag("Wall"))
             {
-                Debug.Log("ON COLLISION STAY");
+                // Check grounded
                 if (contact.normal == Vector3.up)
                 {
                     isGrounded = true;
+                    climbStarted = false;
+                    climbWallAboveHead = false;
+                    climbWallAtFeet = false;
+                    climbEndY = float.MinValue;
                     jumpBufferTime = Time.time + jumpBuffer;
                 }
+
+                
+
+                //Climbing wall
+                if (!climbStarted && !isClimbing)
+                {
+                    if (contact.normal == -NearestWorldAxis(playerBody.forward)) // We are looking at the wall that we are hitting.
+                    {
+                        if (contact.point.y >= climbPositionHead.position.y) // One of the contacts is above the climb position, meaning we cannot climb it.
+                        {
+                            Debug.LogError("WALL TOO HIGH TO CLIMB");
+                            climbWallAboveHead = true;
+                        }
+                        else
+                        {
+                            climbWallAtFeet = true;
+                            climbEndY = Mathf.Max(climbEndY, contact.point.y + 0.1f);
+                        }
+                    }
+                }
+
             }
         }
+
+        if (!climbStarted && !isClimbing)
+        {
+            Debug.Log(climbWallAboveHead + " - " + climbWallAtFeet);
+            if (rb.velocity.y < -0.1f && player.GetButton(RewiredConsts.Action.Jump) && !climbWallAboveHead && climbWallAtFeet)
+            {
+                StartCoroutine(ClimbUpWall());
+            }
+        }
+
+    }
+
+
+    IEnumerator ClimbUpWall()
+    {
+        climbStarted = true;
+
+        while (transform.position.y < climbEndY)
+        {
+            isClimbing = true;
+            climbStarted = true;
+            rb.velocity = new Vector3(0f, 0f, 0f);
+            rb.AddForce(Vector3.up * 5f, ForceMode.VelocityChange);
+            rb.AddForce(playerBody.forward * 3f, ForceMode.VelocityChange);
+            yield return null;
+        }
+
+        isClimbing = false;
+        yield return null;
     }
 
 }

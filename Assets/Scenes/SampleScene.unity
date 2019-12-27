@@ -428,6 +428,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 0}
   spawn: {x: 0, y: 0, z: 0}
+  climbZonePrefab: {fileID: 5645407225081216221, guid: 3d3a5f876bc29984db6b1df4dafa9ae5,
+    type: 3}
   material: {fileID: 2100000, guid: 10c4710976e0f224aa439e8bb72cc051, type: 2}
   materialTransparent: {fileID: 2100000, guid: de4c3232cbfa76744be097b35f81996f, type: 2}
   rooms:
