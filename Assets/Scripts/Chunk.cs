@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using UnityEditor;
 
 public class Chunk
 {
@@ -52,6 +53,10 @@ public class Chunk
         position = chunkObject.transform.position;
 
         GenerateVoxelMap();
+
+        string[] chunkFiles = Directory.GetFiles(Application.streamingAssetsPath + "/Rooms", "tomb_*.chunk");
+        string selectedChunkFile = Path.GetFileNameWithoutExtension(chunkFiles[Random.Range(0, chunkFiles.Length)]);
+            LoadChunk(selectedChunkFile);
 
 
 
@@ -246,7 +251,7 @@ public class Chunk
 
             foreach (Spawner s in spawners.ToArray())
             {
-                if (Vector3.Distance(pos, s.position) <= 0.05f)
+                if (Vector3.Distance(pos + chunkObject.transform.position, s.position) <= 0.05f)
                 {
                     spawners.Remove(s);
                     Object.Destroy(s.gameObject);
@@ -323,14 +328,16 @@ public class Chunk
 
             foreach (Spawner s in spawners.ToArray())
             {
-                if (Vector3.Distance(pos, s.position) <= 0.05f)
+                if (Vector3.Distance(pos + chunkObject.transform.position, s.position) <= 0.05f)
                 {
                     doCreate = false;
                 }
             }
 
+            Debug.Log(pos);
+
             if (doCreate)
-                spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner, pos, Quaternion.identity).GetComponent<Spawner>());
+                spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner, pos + chunkObject.transform.position, Quaternion.identity).GetComponent<Spawner>());
             //voxelMap[x, y, z].spawned = true;
 
         }

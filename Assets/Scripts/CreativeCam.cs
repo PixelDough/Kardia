@@ -84,14 +84,16 @@ public class CreativeCam : MonoBehaviour
 
         if (GameManager.Instance.isInEditMode)
         {
-            world.GetChunkFromVector3(Vector3.zero).DoDespawners();
+            //world.GetChunkFromVector3(Vector3.zero).DoDespawners();
+            world.DoAllDespawners();
             Camera.main.cullingMask |= LayerMask.GetMask("EditorUI");
             cam.gameObject.SetActive(true);
             isMenuOpen = false;
         }
         else
         {
-            world.GetChunkFromVector3(Vector3.zero).DoSpawners();
+            //world.GetChunkFromVector3(Vector3.zero).DoSpawners();
+            world.DoAllSpawners();
             Camera.main.cullingMask &= ~LayerMask.GetMask("EditorUI");
             cam.gameObject.SetActive(false);
             isMenuOpen = false;

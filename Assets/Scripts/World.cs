@@ -57,6 +57,22 @@ public class World : MonoBehaviour
 
     }
 
+    public void DoAllSpawners()
+    {
+        foreach(Chunk c in chunks)
+        {
+            c.DoSpawners();
+        }
+    }
+
+    public void DoAllDespawners()
+    {
+        foreach (Chunk c in chunks)
+        {
+            c.DoDespawners();
+        }
+    }
+
 }
 
 

@@ -69,7 +69,7 @@ public class CreativeMenu : MenuPanel
         foreach(string s in roomFiles)
         {
 
-            Debug.Log(roomFiles.IndexOf(s) + ": " + Path.GetFileName(s));
+            //Debug.Log(roomFiles.IndexOf(s) + ": " + Path.GetFileName(s));
         }
     }
 

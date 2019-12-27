@@ -4184,7 +4184,7 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 98.25
+  m_fontSize: 98.2
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -4268,6 +4268,21 @@ PrefabInstance:
       propertyPath: m_Name
       value: Creative Player
       objectReference: {fileID: 0}
+    - target: {fileID: 1795156959429198631, guid: 90d09604a9574b945a61cf4dc3f32d57,
+        type: 3}
+      propertyPath: selectCube
+      value: 
+      objectReference: {fileID: 752542420}
+    - target: {fileID: 1795156959429198631, guid: 90d09604a9574b945a61cf4dc3f32d57,
+        type: 3}
+      propertyPath: menu
+      value: 
+      objectReference: {fileID: 862272605}
+    - target: {fileID: 1795156959429198631, guid: 90d09604a9574b945a61cf4dc3f32d57,
+        type: 3}
+      propertyPath: toolText
+      value: 
+      objectReference: {fileID: 1884481045}
     - target: {fileID: 1795156959429198628, guid: 90d09604a9574b945a61cf4dc3f32d57,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -4323,20 +4338,5 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1795156959429198631, guid: 90d09604a9574b945a61cf4dc3f32d57,
-        type: 3}
-      propertyPath: selectCube
-      value: 
-      objectReference: {fileID: 752542420}
-    - target: {fileID: 1795156959429198631, guid: 90d09604a9574b945a61cf4dc3f32d57,
-        type: 3}
-      propertyPath: menu
-      value: 
-      objectReference: {fileID: 862272605}
-    - target: {fileID: 1795156959429198631, guid: 90d09604a9574b945a61cf4dc3f32d57,
-        type: 3}
-      propertyPath: toolText
-      value: 
-      objectReference: {fileID: 1884481045}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 90d09604a9574b945a61cf4dc3f32d57, type: 3}
