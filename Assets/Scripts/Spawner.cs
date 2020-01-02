@@ -36,7 +36,7 @@ public class Spawner : MonoBehaviour
         if (diceRoll <= chanceToSpawnCheck)
         {
             Vector3 pos = transform.position + (Vector3.one * 0.5f);
-            if (spawnOnGround) pos += Vector3.down * 0.5f;
+            if (spawnOnGround) pos += Vector3.down * 0.5f + (Vector3.up * 0.02f);
             pos += new Vector3(Random.Range(-randomPositionRange.x / 2f, randomPositionRange.x / 2f), Random.Range(-randomPositionRange.y / 2f, randomPositionRange.y / 2f), Random.Range(-randomPositionRange.z / 2f, randomPositionRange.z / 2f));
             if (accomodateForVertexWobble) pos += Vector3.up * 0.02f;
 
@@ -75,6 +75,8 @@ public class EntitySpawnerType
     public int chanceToSpawnCheck = 100;
 
     public GameObject prefabSpawner;
+
+    public bool isLight = false;
 
 
 }

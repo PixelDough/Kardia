@@ -6,7 +6,9 @@ public static class VoxelData
 {
 
     public static readonly Vector3Int chunkSize = new Vector3Int(12, 10, 12);
-    public static readonly Vector3Int worldSizeInChunks = new Vector3Int(6, 6, 6);
+    public static readonly Vector3Int worldSizeInChunks = new Vector3Int(1,1,1);
+
+    public static readonly float lightFalloff = 0.1f;
 
     public static int seed;
 

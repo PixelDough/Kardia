@@ -36,7 +36,9 @@ public class ObjectCulling : MonoBehaviour
             Lightcomponent.intensity = Mathf.Lerp(Lightcomponent.intensity, 0f, 0.05f);
         }
 
-        
+        Lightcomponent.enabled = !Mathf.Approximately(Lightcomponent.intensity, 0);
+
+
     }
 
 }

@@ -8,9 +8,11 @@ public class CreativeMenu : MenuPanel
 {
 
     World world;
+    public ScrollRect blocksScroll;
     public GridLayoutGroup blockGroup;
     public BlockSelectButton blockButton;
 
+    public ScrollRect spawnersScroll;
     public GridLayoutGroup spawnerGroup;
     public BlockSelectButton spawnerButton;
 
@@ -46,19 +48,19 @@ public class CreativeMenu : MenuPanel
                 currentButton = Instantiate(spawnerButton.gameObject, spawnerGroup.transform).GetComponent<BlockSelectButton>();
         }
 
-        spawnerGroup.gameObject.SetActive(false);
+        spawnersScroll.gameObject.SetActive(false);
 
         UpdateFileNames();
 
     }
 
 
-    public void SetActiveSelectionMenu(GridLayoutGroup gridLayoutGroup)
+    public void SetActiveSelectionMenu(ScrollRect scrollRect)
     {
-        blockGroup.gameObject.SetActive(false);
-        spawnerGroup.gameObject.SetActive(false);
+        blocksScroll.gameObject.SetActive(false);
+        spawnersScroll.gameObject.SetActive(false);
 
-        gridLayoutGroup.gameObject.SetActive(true);
+        scrollRect.gameObject.SetActive(true);
     }
 
 

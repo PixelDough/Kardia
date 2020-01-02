@@ -160,7 +160,9 @@ public class PlayerController : MonoBehaviour
         float speedMultiplier = 1f;
         if (player.GetButton(RewiredConsts.Action.Sprint) && !isCrawling) speedMultiplier = 2f;
 
-        Vector3 finalMovementVector = (input * speedMultiplier);
+        Vector3 finalMovementVector = Vector3.zero;
+
+        finalMovementVector = (input * speedMultiplier);
 
         if (player.GetButton(RewiredConsts.Action.Jump))
             DoClimbing();
@@ -176,8 +178,6 @@ public class PlayerController : MonoBehaviour
                 rb.AddForce(Vector3.up * CalculateJumpSpeed(1.25f, gravity), ForceMode.VelocityChange);
             }
         }
-
-        if (!isClimbing) DoGravity();
 
         if (player.GetButtonDown(RewiredConsts.Action.Jump) && canJumpBuffer)
         {
