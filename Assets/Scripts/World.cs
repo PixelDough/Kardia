@@ -17,10 +17,12 @@ public class World : MonoBehaviour
     public Material material;
     public Material materialTransparent;
 
-    public Room[] rooms;
+    public Room[,,] rooms = new Room[VoxelData.worldSizeInChunks.x, VoxelData.worldSizeInChunks.y, VoxelData.worldSizeInChunks.z];
 
     [TableList()]
     public BlockType[] blockTypes;
+
+    [HideInInspector] public List<string> blockNames = new List<string>();
 
     [TableList()]
     public EntitySpawnerType[] entitySpawnerTypes;
@@ -35,16 +37,35 @@ public class World : MonoBehaviour
     private void Start()
     {
 
+        foreach(BlockType bt in blockTypes)
+        {
+            blockNames.Add(bt.name);
+        }
+
         for(int x = 0; x < VoxelData.worldSizeInChunks.x; x++)
         {
             for (int y = 0; y < VoxelData.worldSizeInChunks.y; y++)
             {
                 for (int z = 0; z < VoxelData.worldSizeInChunks.z; z++)
                 {
+                    rooms[x, y, z] = new Room(Room.Openings.Front & Room.Openings.Up);
                     chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this, (VoxelData.worldSizeInChunks.x > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x-1 || y == 0 || y == VoxelData.worldSizeInChunks.y-1 || z == 0 || z == VoxelData.worldSizeInChunks.z-1));
                 }
             }
         }
+    }
+
+
+    public int GetBlockIndex(string value)
+    {
+        for (int index = 0; index < blockNames.Count; index++)
+        {
+            if (blockNames[index] == value)
+            {
+                return index;
+            }
+        }
+        return -1;
     }
 
 
@@ -83,7 +104,7 @@ public class Room
 
     public Openings openings;
 
-    public Room()
+    public Room(Openings openings)
     {
         // EXAMPLE: How to add masks to a flag
         openings |= Openings.Front | Openings.Left;

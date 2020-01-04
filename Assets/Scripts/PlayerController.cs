@@ -179,6 +179,8 @@ public class PlayerController : MonoBehaviour
             }
         }
 
+        if (!isClimbing) DoGravity();
+
         if (player.GetButtonDown(RewiredConsts.Action.Jump) && canJumpBuffer)
         {
             Debug.Log("Jumped!");

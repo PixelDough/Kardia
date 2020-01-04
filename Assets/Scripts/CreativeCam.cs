@@ -104,8 +104,6 @@ public class CreativeCam : MonoBehaviour
     {
         RaycastHit hit;
 
-        
-
         if (Physics.Raycast(transform.position, cam.transform.forward, out hit, 10))
         {
             selectCube.gameObject.SetActive(true);
@@ -122,10 +120,11 @@ public class CreativeCam : MonoBehaviour
 
             bool placeCheck = player.GetButtonDown(RewiredConsts.Action.Place);
 
-            if (tool == VoxelTools.Paint)
+            if (tool == VoxelTools.Paint || tool == VoxelTools.Fill)
             {
                 blockPlacePosition = blockHit;
-                placeCheck = player.GetButton(RewiredConsts.Action.Place);
+                if (tool == VoxelTools.Paint)
+                    placeCheck = player.GetButton(RewiredConsts.Action.Place);
             }
 
             selectCube.position = blockHit;
@@ -138,8 +137,16 @@ public class CreativeCam : MonoBehaviour
 
             if (placeCheck)
             {
-                
-                world.GetChunkFromVector3(blockPlacePosition).EditVoxel(blockPlacePosition, selectedBlockID, voxelType);
+                if (tool != VoxelTools.Fill)
+                    world.GetChunkFromVector3(blockPlacePosition).EditVoxel(blockPlacePosition, selectedBlockID, voxelType);
+                else
+                {
+                    Chunk currentChunk = world.GetChunkFromVector3(blockPlacePosition);
+
+                    int blockID = currentChunk.GetVoxelFromMap(blockPlacePosition).id;
+
+                    StartCoroutine(ReplaceBlocks(currentChunk, blockID, selectedBlockID));
+                }
             }
             if (Input.GetKeyDown(KeyCode.L))
             {
@@ -151,6 +158,27 @@ public class CreativeCam : MonoBehaviour
         {
             selectCube.gameObject.SetActive(false);
         }
+    }
+
+    private IEnumerator ReplaceBlocks(Chunk chunk, int sourceBlock, int destinationBlock)
+    {
+        for (int x = 0; x < VoxelData.chunkSize.x; x++)
+        {
+            for (int y = 0; y < VoxelData.chunkSize.y; y++)
+            {
+                for (int z = 0; z < VoxelData.chunkSize.z; z++)
+                {
+                    
+                    if (chunk.GetVoxelFromMap(new Vector3(x, y, z)).id == sourceBlock)
+                    {
+                        yield return null;
+                        chunk.EditVoxel(new Vector3(x, y, z), destinationBlock, voxelType);
+                    }
+                }
+            }
+        }
+
+        yield return null;
     }
 
     private void DoMovement()

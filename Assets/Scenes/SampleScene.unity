@@ -14,13 +14,13 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
-  m_Fog: 1
+  m_Fog: 0
   m_FogColor: {r: 0.66, g: 0.43230003, b: 0.36300004, a: 1}
   m_FogMode: 2
   m_FogDensity: 0.1
   m_LinearFogStart: 10
   m_LinearFogEnd: 15
-  m_AmbientSkyColor: {r: 0.2, g: 0.11696667, b: 0.106, a: 1}
+  m_AmbientSkyColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -732,189 +732,209 @@ MonoBehaviour:
     type: 3}
   material: {fileID: 2100000, guid: 10c4710976e0f224aa439e8bb72cc051, type: 2}
   materialTransparent: {fileID: 2100000, guid: de4c3232cbfa76744be097b35f81996f, type: 2}
-  rooms:
-  - openings: 0
   blockTypes:
   - textureSideFace: {fileID: 0}
     textureTopBottomFace: {fileID: 0}
     renderNeighborFaces: 1
     isSolid: 0
-    name: Air
+    name: air
   - textureSideFace: {fileID: 848547321985801646, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 848547321985801646, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:block
   - textureSideFace: {fileID: 8314276924125523624, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 8314276924125523624, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:block_broken
   - textureSideFace: {fileID: -7840074429431832993, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -5015574663873436422, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:pillar_end
   - textureSideFace: {fileID: 1784104313756776463, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 3276134778977178985, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:writing
   - textureSideFace: {fileID: -2319620163471104065, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -2319620163471104065, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:bricks
   - textureSideFace: {fileID: -6843745651473779026, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 2598164636216062768, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:color
   - textureSideFace: {fileID: 3376238651490693033, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -419404853668576405, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:carpet_blue
   - textureSideFace: {fileID: 3879616235255840192, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 3879616235255840192, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:flower_pattern
   - textureSideFace: {fileID: 2541278259166485901, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 4271011987453948750, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:carpet_red
   - textureSideFace: {fileID: 7010138011366478569, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 7010138011366478569, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: barrier
   - textureSideFace: {fileID: 5011277631304545100, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -5015574663873436422, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:pillar_mid
   - textureSideFace: {fileID: 8887327274122193890, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -5015574663873436422, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:pillar_mid_vines
   - textureSideFace: {fileID: 3713039710029934346, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 3713039710029934346, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:sand
   - textureSideFace: {fileID: 3981125076090490919, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 3981125076090490919, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:dirt
   - textureSideFace: {fileID: 8591064183537740587, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 8591064183537740587, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:gold
   - textureSideFace: {fileID: 3530369182430365977, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 3530369182430365977, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:arrows
   - textureSideFace: {fileID: -7436072354229515435, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 848547321985801646, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:scarab
   - textureSideFace: {fileID: 8442085685846952864, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 848547321985801646, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:ankh
   - textureSideFace: {fileID: 3036923394425876512, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 848547321985801646, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:scarab_empty
   - textureSideFace: {fileID: 3984020365136769737, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: 848547321985801646, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:ankh_empty
   - textureSideFace: {fileID: -7091474775523399217, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -7091474775523399217, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:etched
   - textureSideFace: {fileID: -8949152895353029622, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -8949152895353029622, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:planks
   - textureSideFace: {fileID: -7728224020416167488, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -7728224020416167488, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:weaved
   - textureSideFace: {fileID: -3018300485548308903, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -3018300485548308903, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:block_edge
   - textureSideFace: {fileID: -1032313257125114724, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     textureTopBottomFace: {fileID: -1032313257125114724, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
       type: 3}
     renderNeighborFaces: 0
     isSolid: 1
-    name: 
+    name: tomb:block_ruby
+  - textureSideFace: {fileID: -6496604115938629869, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
+      type: 3}
+    textureTopBottomFace: {fileID: -6496604115938629869, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
+      type: 3}
+    renderNeighborFaces: 1
+    isSolid: 1
+    name: glass
+  - textureSideFace: {fileID: 4541613640184359397, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
+      type: 3}
+    textureTopBottomFace: {fileID: 4541613640184359397, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
+      type: 3}
+    renderNeighborFaces: 0
+    isSolid: 1
+    name: worm:cube
+  - textureSideFace: {fileID: 6279604770963430837, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
+      type: 3}
+    textureTopBottomFace: {fileID: 6279604770963430837, guid: 11e4a17325ba8834c8fdbc4d1b63287d,
+      type: 3}
+    renderNeighborFaces: 0
+    isSolid: 1
+    name: worm:blobs
+  blockNames: []
   entitySpawnerTypes:
   - editorIcon: {fileID: 7003490630373165651, guid: 57aae5347792c2546999cf2b5573e0b3,
       type: 3}
@@ -3081,10 +3101,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   startActive: 0
   activateMouseOnActive: 1
-  blocksScroll: {fileID: 0}
+  blocksScroll: {fileID: 1541519600}
   blockGroup: {fileID: 1384313024}
   blockButton: {fileID: 845976369}
-  spawnersScroll: {fileID: 0}
+  spawnersScroll: {fileID: 439274585}
   spawnerGroup: {fileID: 293156645}
   spawnerButton: {fileID: 141984700}
   roomFiles: []

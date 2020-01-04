@@ -91,12 +91,12 @@ public class Chunk
                     if (!isBorderChunk)
                     {
                         //voxelMap[x, y, z] = new VoxelState(Random.Range(1, world.blockTypes.Length));
-                        if ((x == 0 || x == VoxelData.chunkSize.x - 1) || (y == 0 || y == VoxelData.chunkSize.y - 1) || (z == 0 || z == VoxelData.chunkSize.z - 1)) voxelMap[x, y, z] = new VoxelState(1);
-                        else voxelMap[x, y, z] = new VoxelState(0);
+                        if ((x == 0 || x == VoxelData.chunkSize.x - 1) || (y == 0 || y == VoxelData.chunkSize.y - 1) || (z == 0 || z == VoxelData.chunkSize.z - 1)) voxelMap[x, y, z] = new VoxelState(1, "tomb:block");
+                        else voxelMap[x, y, z] = new VoxelState(0, "air");
                     }
                     else
                     {
-                        voxelMap[x, y, z] = new VoxelState(10);
+                        voxelMap[x, y, z] = new VoxelState(10, "barrier");
                     }
                 }
             }
@@ -112,9 +112,9 @@ public class Chunk
 
         ClearMeshData();
 
-        for (int y = 0; y < VoxelData.chunkSize.y; y++)
+        for (int x = 0; x < VoxelData.chunkSize.x; x++)
         {
-            for (int x = 0; x < VoxelData.chunkSize.x; x++)
+            for (int y = 0; y < VoxelData.chunkSize.y; y++)
             {
                 for (int z = 0; z < VoxelData.chunkSize.z; z++)
                 {
@@ -259,6 +259,7 @@ public class Chunk
         zCheck -= Mathf.FloorToInt(chunkObject.transform.position.z);
 
         voxelMap[xCheck, yCheck, zCheck].id = newID;
+        voxelMap[xCheck, yCheck, zCheck].blockName = world.blockNames[newID];
         voxelMap[xCheck, yCheck, zCheck].voxelType = _voxelType;
 
         CreateMeshData();
@@ -356,8 +357,18 @@ public class Chunk
         int y = Mathf.FloorToInt(pos.y);
         int z = Mathf.FloorToInt(pos.z);
 
+        string blockName = voxelMap[x, y, z].blockName;
+        //Debug.Log(blockName);
+
         int blockID = voxelMap[x, y, z].id;
 
+        blockID = world.GetBlockIndex(blockName);
+
+        if (blockID == -1)
+        {
+            blockID = voxelMap[x, y, z].id;
+            voxelMap[x, y, z].blockName = world.blockTypes[blockID].name;
+        }
 
         if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.EntitySpawner)
         {
@@ -441,7 +452,7 @@ public class Chunk
                 if (CheckVoxel(newCheck))
                     neighbor = voxelMap[newCheck.x, newCheck.y, newCheck.z];
 
-                if ((neighbor == null || world.blockTypes[neighbor.id].renderNeighborFaces || neighbor.voxelType != VoxelData.VoxelTypes.Block) && world.blockTypes[blockID].isSolid)
+                if ((neighbor == null || (world.blockTypes[neighbor.id].renderNeighborFaces && world.blockTypes[neighbor.id].name != world.blockTypes[blockID].name) || neighbor.voxelType != VoxelData.VoxelTypes.Block) && world.blockTypes[blockID].isSolid)
                 {
 
                     vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
@@ -594,6 +605,8 @@ public class Chunk
 
         voxelMap = voxelMapData.GetFullVoxelMap();
 
+        Debug.Log(voxelMap[0,0,0].blockName);
+
 
         CreateMeshData();
         CreateMesh();
@@ -681,7 +694,8 @@ public class VoxelMapData
 
     public VoxelMapData()
     {
-        voxelMaps[0] = new VoxelState(0);
+        
+        //voxelMaps[0] = new VoxelState(0, "");
     }
 
     public VoxelState[,,] GetFullVoxelMap()
@@ -711,6 +725,7 @@ public class VoxelMapData
 public class VoxelState
 {
     public int id = 0;
+    public string blockName = "air";
     public VoxelData.VoxelTypes voxelType = VoxelData.VoxelTypes.Block;
     //public bool spawned = false;
 
@@ -719,9 +734,16 @@ public class VoxelState
         id = _id;
     }
 
+    public VoxelState(int _id, string _name)
+    {
+        id = _id;
+        blockName = _name;
+    }
+
     public VoxelState(int _id, VoxelData.VoxelTypes _voxelType)
     {
         id = _id;
         voxelType = _voxelType;
     }
+
 }
