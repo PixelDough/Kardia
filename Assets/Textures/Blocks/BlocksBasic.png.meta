@@ -131,6 +131,15 @@ TextureImporter:
   - first:
       213: 6279604770963430837
     second: texture_worm_blobs
+  - first:
+      213: -1105812112389414458
+    second: texture_worm_hole
+  - first:
+      213: -5353695478818814290
+    second: texture_worm_soft
+  - first:
+      213: 2434024917885060844
+    second: texture_worm_squish
   externalObjects: {}
   serializedVersion: 10
   mipmaps:
@@ -979,7 +988,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -1000,7 +1009,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -1008,6 +1017,69 @@ TextureImporter:
       bones: []
       spriteID: 9d3b34a8ed1d7f244ac820d9007b5c29
       internalID: 6279604770963430837
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: texture_worm_hole
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 208
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a41fef9bbd23eaa468c88aee1bcb2435
+      internalID: -1105812112389414458
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: texture_worm_soft
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 208
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e278b0a1e7624df498450886b9b3a3dd
+      internalID: -5353695478818814290
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: texture_worm_squish
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 208
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 61f0869e1551ad944babb1722139807c
+      internalID: 2434024917885060844
       vertices: []
       indices: 
       edges: []

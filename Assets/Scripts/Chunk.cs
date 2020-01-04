@@ -370,6 +370,17 @@ public class Chunk
             voxelMap[x, y, z].blockName = world.blockTypes[blockID].name;
         }
 
+        foreach (Spawner s in spawners.ToArray())
+        {
+            if (Vector3.Distance(pos + chunkObject.transform.position, s.position) <= 0.05f)
+            {
+                spawners.Remove(s);
+                Object.Destroy(s.gameObject);
+
+            }
+
+        }
+
         if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.EntitySpawner)
         {
 
@@ -430,16 +441,7 @@ public class Chunk
         if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.Block)
         {
 
-            foreach (Spawner s in spawners.ToArray())
-            {
-                if (Vector3.Distance(pos + chunkObject.transform.position, s.position) <= 0.05f)
-                {
-                    spawners.Remove(s);
-                    Object.Destroy(s.gameObject);
-
-                }
-
-            }
+            
 
             //lightMap[x, y, z] = 0;
 
