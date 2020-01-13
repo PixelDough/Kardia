@@ -14,13 +14,13 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
-  m_Fog: 0
+  m_Fog: 1
   m_FogColor: {r: 0.66, g: 0.43230003, b: 0.36300004, a: 1}
   m_FogMode: 2
   m_FogDensity: 0.1
   m_LinearFogStart: 10
   m_LinearFogEnd: 15
-  m_AmbientSkyColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
+  m_AmbientSkyColor: {r: 0.4, g: 0.4, b: 0.4, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -730,7 +730,7 @@ MonoBehaviour:
   spawn: {x: 0, y: 0, z: 0}
   climbZonePrefab: {fileID: 5645407225081216221, guid: 3d3a5f876bc29984db6b1df4dafa9ae5,
     type: 3}
-  material: {fileID: 2100000, guid: 7dcc6fc80cbb32f47b7472b0871882f8, type: 2}
+  material: {fileID: 2100000, guid: 10c4710976e0f224aa439e8bb72cc051, type: 2}
   materialTransparent: {fileID: 2100000, guid: de4c3232cbfa76744be097b35f81996f, type: 2}
   blockTypes:
   - textureSideFace: {fileID: 0}
@@ -3559,7 +3559,7 @@ MonoBehaviour:
     keepAlpha: 0
   fog:
     enabled: 1
-    excludeSkybox: 1
+    excludeSkybox: 0
   debugLayer:
     lightMeter:
       width: 512

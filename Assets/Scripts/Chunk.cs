@@ -20,6 +20,8 @@ public class Chunk
     public GameObject chunkObject;
     Vector3 position;
 
+    int rotations = 0;
+
     int vertexIndex = 0;
 
     List<Vector3> vertices = new List<Vector3>();
@@ -34,14 +36,18 @@ public class Chunk
 
     VoxelState[,,] voxelMap = new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
 
+    Queue<Vector3Int> spawnersToUpdate = new Queue<Vector3Int>();
+    Queue<Vector3Int> blocksToUpdate = new Queue<Vector3Int>();
+
     World world;
 
-    public Chunk(ChunkCoord _coord, World _world, bool _isBorderChunk = false)
+    public Chunk(ChunkCoord _coord, World _world, bool _isBorderChunk = false, int _rotations = 0)
     {
 
         coord = _coord;
         world = _world;
         isBorderChunk = _isBorderChunk;
+        rotations = _rotations;
 
         chunkObject = new GameObject();
         meshFilter = chunkObject.AddComponent<MeshFilter>();
@@ -123,6 +129,45 @@ public class Chunk
                 }
             }
         }
+
+        UpdateSpawners();
+
+        while (lightBfsQueue.Count > 0)
+        {
+            Vector3 v = lightBfsQueue.Peek();
+
+            //for (int p = 0; p < 6; p++)
+            //{
+            //    Vector3 currentVoxel = new Vector3Int((int)(v.x + VoxelData.faceChecks[p].x), (int)(v.y + VoxelData.faceChecks[p].y), (int)(v.z + VoxelData.faceChecks[p].z));
+            //    Vector3Int neighbor = new Vector3Int((int)currentVoxel.x, (int)currentVoxel.y, (int)currentVoxel.z);
+
+            //    if (IsVoxelInChunk(neighbor.x, neighbor.y, neighbor.z))
+            //    {
+            //        Debug.Log(GetVoxelFromMap(neighbor));
+            //        if (!world.blockTypes[GetVoxelFromMap(neighbor).id].renderNeighborFaces)
+            //        {
+            //            lightMap[neighbor.x, neighbor.y, neighbor.z] = 0f;
+            //        }
+            //        else
+            //        {
+
+            //            if (lightMap[neighbor.x, neighbor.y, neighbor.z] < lightMap[(int)v.x, (int)v.y, (int)v.z] - VoxelData.lightFalloff)
+            //            {
+            //                lightMap[neighbor.x, neighbor.y, neighbor.z] = lightMap[(int)v.x, (int)v.y, (int)v.z] - VoxelData.lightFalloff;
+
+            //                //if (lightMap[neighbor.x, neighbor.y, neighbor.z] > VoxelData.lightFalloff)
+            //                lightBfsQueue.Enqueue(neighbor);
+            //            }
+            //        }
+                    
+            //    }
+            //}
+
+            lightBfsQueue.Dequeue();
+        }
+
+        UpdateBlocks();
+        
 
         //while (lightBfsQueue.Count > 0)
         //{
@@ -302,9 +347,9 @@ public class Chunk
         mesh.uv = uvs.ToArray();
         //Debug.LogError(vertices.Count + " " + colors.Count);
         mesh.colors = colors.ToArray();
-        
 
-        mesh.RecalculateNormals();
+        mesh.normals = normals.ToArray();
+        //mesh.RecalculateNormals();
 
         meshFilter.mesh = mesh;
         meshCollider.sharedMesh = mesh;
@@ -323,7 +368,8 @@ public class Chunk
         colors.Clear();
         lightBfsQueue.Clear();
         lightMap = new float[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
-
+        spawnersToUpdate.Clear();
+        blocksToUpdate.Clear();
         //foreach (Spawner s in spawners)
         //{
         //    Object.Destroy(s.gameObject);
@@ -350,12 +396,161 @@ public class Chunk
     }
 
 
+    private void UpdateSpawners()
+    {
+        while (spawnersToUpdate.Count > 0)
+        {
+            Vector3Int spawnerCurrent = spawnersToUpdate.Dequeue();
+
+            EntitySpawnerType entitySpawnerType = world.entitySpawnerTypes[voxelMap[spawnerCurrent.x, spawnerCurrent.y, spawnerCurrent.z].id];
+
+            if (entitySpawnerType.isLight)
+            {
+                lightMap[spawnerCurrent.x, spawnerCurrent.y, spawnerCurrent.z] = 1;
+                lightBfsQueue.Enqueue(new Vector3(spawnerCurrent.x, spawnerCurrent.y, spawnerCurrent.z));
+            }
+
+
+
+            bool doCreate = true;
+
+            foreach (Spawner s in spawners.ToArray())
+            {
+                if (Vector3.Distance(spawnerCurrent + chunkObject.transform.position, s.position) <= 0.05f)
+                {
+                    doCreate = false;
+                }
+            }
+
+            if (doCreate)
+                spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner, spawnerCurrent + chunkObject.transform.position, Quaternion.identity).GetComponent<Spawner>());
+            //voxelMap[x, y, z].spawned = true;
+        }
+    }
+
+
+    private void UpdateBlocks()
+    {
+        while (blocksToUpdate.Count > 0)
+        {
+            Vector3Int blockCurrent = blocksToUpdate.Dequeue();
+
+            string blockName = voxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].blockName;
+            int blockID = voxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].id;
+
+            blockID = world.GetBlockIndex(blockName);
+
+            if (blockID == -1)
+            {
+                blockID = voxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].id;
+                voxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].blockName = world.blockTypes[blockID].name;
+            }
+
+            for (int p = 0; p < 6; p++)
+            {
+
+                Vector3Int newCheck = new Vector3Int((int)(blockCurrent.x + VoxelData.faceChecks[p].x), (int)(blockCurrent.y + VoxelData.faceChecks[p].y), (int)(blockCurrent.z + VoxelData.faceChecks[p].z));
+
+                VoxelState neighbor = null;
+                if (CheckVoxel(newCheck))
+                    neighbor = voxelMap[newCheck.x, newCheck.y, newCheck.z];
+
+                if ((neighbor == null || (world.blockTypes[neighbor.id].renderNeighborFaces && world.blockTypes[neighbor.id].name != world.blockTypes[blockID].name) || neighbor.voxelType != VoxelData.VoxelTypes.Block) && world.blockTypes[blockID].isSolid)
+                {
+
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        Vector3 vertPos = blockCurrent + VoxelData.voxelVerts[VoxelData.voxelTris[p, i]];
+                        Vector3 vertNorm = VoxelData.faceChecks[p];
+
+                        //int otherVert = vertices.IndexOf(vertPos);
+                        //if (otherVert != -1)
+                        //{
+                        //    vertNorm = (vertNorm + normals[otherVert]) / 2f;
+                        //}
+
+                        vertices.Add(vertPos);
+                        normals.Add(vertNorm);
+
+                        float lightValue = 0;
+
+                        //if (IsVoxelInChunk(newCheck.x, newCheck.y, newCheck.z))
+                        //{
+                        //    lightValue = lightMap[newCheck.x, newCheck.y, newCheck.z];
+
+                        //    for (int _x = -1; _x <= 1; _x += 2)
+                        //    {
+                        //        for (int _y = -1; _y <= 1; _y += 2)
+                        //        {
+                        //            if (newCheck.x + _x > 0 && newCheck.x + _x < VoxelData.chunkSize.x && newCheck.z + _y > 0 && newCheck.z + _y < VoxelData.chunkSize.z && world.blockTypes[GetVoxelFromMap(new Vector3(newCheck.x + _x, newCheck.y, newCheck.z + _y)).id].renderNeighborFaces)
+                        //                lightValue = (lightValue + lightMap[newCheck.x + _x, newCheck.y, newCheck.z + _y]) / 2f;
+                        //        }
+                        //    }
+
+                        //    colors.Add(new Color(0, 0, 0, lightValue));
+                        //}
+                        //else
+                            colors.Add(new Color(0, 0, 0, 0));
+                    }
+
+                    if (p == 2 || p == 3)
+                        AddTexture(world.blockTypes[blockID].textureTopBottomFace);
+                    else
+                        AddTexture(world.blockTypes[blockID].textureSideFace);
+
+
+                    //if (IsVoxelInChunk(newCheck.x, newCheck.y, newCheck.z))
+                    //{
+                    //    float lightValue = lightMap[newCheck.x, newCheck.y, newCheck.z];
+                    //    colors.Add(new Color(1, 1, 1, lightValue));
+                    //    colors.Add(new Color(1, 1, 1, lightValue));
+                    //    colors.Add(new Color(1, 1, 1, lightValue));
+                    //    colors.Add(new Color(1, 1, 1, lightValue));
+
+                    //}
+                    //else
+                    //{
+                    //    float lightValue = 1;
+                    //    colors.Add(new Color(1, 1, 1, lightValue));
+                    //    colors.Add(new Color(1, 1, 1, lightValue));
+                    //    colors.Add(new Color(1, 1, 1, lightValue));
+                    //    colors.Add(new Color(1, 1, 1, lightValue));
+                    //}
+
+
+
+                    //colors.Add(new Color(0, 0, 0, 0.5f));
+                    //colors.Add(new Color(0, 0, 0, 0.5f));
+                    //colors.Add(new Color(0, 0, 0, 0.5f));
+                    //colors.Add(new Color(0, 0, 0, 0.5f));
+
+
+                    triangles.Add(vertexIndex);
+                    triangles.Add(vertexIndex + 1);
+                    triangles.Add(vertexIndex + 2);
+                    triangles.Add(vertexIndex + 2);
+                    triangles.Add(vertexIndex + 1);
+                    triangles.Add(vertexIndex + 3);
+
+                    vertexIndex += 4;
+
+                }
+
+
+            }
+        }
+    }
+
+
     void UpdateMeshData(Vector3 pos)
     {
 
         int x = Mathf.FloorToInt(pos.x);
         int y = Mathf.FloorToInt(pos.y);
         int z = Mathf.FloorToInt(pos.z);
+
+        //Debug.LogError(voxelMap[x, y, z] != null);
 
         string blockName = voxelMap[x, y, z].blockName;
         //Debug.Log(blockName);
@@ -381,147 +576,31 @@ public class Chunk
 
         }
 
+        // TODO: Move this into it's own function. Update spawners, then update lighting, then update voxel data.
         if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.EntitySpawner)
         {
 
+            spawnersToUpdate.Enqueue(new Vector3Int(x, y, z));
 
-            EntitySpawnerType entitySpawnerType = world.entitySpawnerTypes[voxelMap[x, y, z].id];
-
-            if (entitySpawnerType.isLight)
-            {
-                lightMap[x, y, z] = 1;
-                lightBfsQueue.Enqueue(new Vector3(x, y, z));
-            }
-
-
-
-            bool doCreate = true;
-
-            foreach (Spawner s in spawners.ToArray())
-            {
-                if (Vector3.Distance(pos + chunkObject.transform.position, s.position) <= 0.05f)
-                {
-                    doCreate = false;
-                }
-            }
-
-            if (doCreate)
-                spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner, pos + chunkObject.transform.position, Quaternion.identity).GetComponent<Spawner>());
-            //voxelMap[x, y, z].spawned = true;
+            
 
         }
-
-
-        //while (lightBfsQueue.Count > 0)
-        //{
-        //    Vector3 v = lightBfsQueue.Peek();
-
-        //    for (int p = 0; p < 6; p++)
-        //    {
-        //        Vector3 currentVoxel = new Vector3Int((int)(v.x + VoxelData.faceChecks[p].x), (int)(v.y + VoxelData.faceChecks[p].y), (int)(v.z + VoxelData.faceChecks[p].z));
-        //        Vector3Int neighbor = new Vector3Int((int)currentVoxel.x, (int)currentVoxel.y, (int)currentVoxel.z);
-
-        //        if (IsVoxelInChunk(neighbor.x, neighbor.y, neighbor.z))
-        //        {
-        //            if (lightMap[neighbor.x, neighbor.y, neighbor.z] < lightMap[(int)v.x, (int)v.y, (int)v.z] - VoxelData.lightFalloff)
-        //            {
-        //                lightMap[neighbor.x, neighbor.y, neighbor.z] = lightMap[(int)v.x, (int)v.y, (int)v.z] - VoxelData.lightFalloff;
-
-        //                //if (lightMap[neighbor.x, neighbor.y, neighbor.z] > VoxelData.lightFalloff)
-        //                    lightBfsQueue.Enqueue(neighbor);
-        //            }
-        //        }
-        //    }
-
-        //    lightBfsQueue.Dequeue();
-        //}
 
 
         // BLOCKS
         if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.Block)
         {
 
+            blocksToUpdate.Enqueue(new Vector3Int(x, y, z));
+
             
-
-            //lightMap[x, y, z] = 0;
-
-            for (int p = 0; p < 6; p++)
-            {
-
-                Vector3Int newCheck = new Vector3Int((int)(pos.x + VoxelData.faceChecks[p].x), (int)(pos.y + VoxelData.faceChecks[p].y), (int)(pos.z + VoxelData.faceChecks[p].z));
-
-                VoxelState neighbor = null;
-                if (CheckVoxel(newCheck))
-                    neighbor = voxelMap[newCheck.x, newCheck.y, newCheck.z];
-
-                if ((neighbor == null || (world.blockTypes[neighbor.id].renderNeighborFaces && world.blockTypes[neighbor.id].name != world.blockTypes[blockID].name) || neighbor.voxelType != VoxelData.VoxelTypes.Block) && world.blockTypes[blockID].isSolid)
-                {
-
-                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
-                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 1]]);
-                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 2]]);
-                    vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 3]]);
-
-                    for (int i = 0; i < 4; i++)
-                        normals.Add(VoxelData.faceChecks[p]);
-
-                    if (p == 2 || p == 3)
-                        AddTexture(world.blockTypes[blockID].textureTopBottomFace);
-                    else
-                        AddTexture(world.blockTypes[blockID].textureSideFace);
-
-
-                    //if (IsVoxelInChunk(newCheck.x, newCheck.y, newCheck.z))
-                    //{
-                    //    float lightValue = lightMap[newCheck.x, newCheck.y, newCheck.z];
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                        
-                    //}
-                    //else
-                    //{
-                    //    float lightValue = 1;
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //}
-
-                    //float lightLevel = 1f;
-
-
-                    //colors.Add(new Color(0, 0, 0, 0.5f));
-                    //colors.Add(new Color(0, 0, 0, 0.5f));
-                    //colors.Add(new Color(0, 0, 0, 0.5f));
-                    //colors.Add(new Color(0, 0, 0, 0.5f));
-
-
-                    triangles.Add(vertexIndex);
-                    triangles.Add(vertexIndex + 1);
-                    triangles.Add(vertexIndex + 2);
-                    triangles.Add(vertexIndex + 2);
-                    triangles.Add(vertexIndex + 1);
-                    triangles.Add(vertexIndex + 3);
-
-                    //else
-                    //{
-                    //    transparentTriangles.Add(vertexIndex);
-                    //    transparentTriangles.Add(vertexIndex + 1);
-                    //    transparentTriangles.Add(vertexIndex + 2);
-                    //    transparentTriangles.Add(vertexIndex + 2);
-                    //    transparentTriangles.Add(vertexIndex + 1);
-                    //    transparentTriangles.Add(vertexIndex + 3);
-                    //}
-
-                    vertexIndex += 4;
-
-                }
-
-
-            }
         }
+
+        // DELETE THIS
+
+        
+        
+
     }
 
     public VoxelState GetVoxelFromMap(Vector3 pos)
@@ -607,8 +686,49 @@ public class Chunk
 
         voxelMap = voxelMapData.GetFullVoxelMap();
 
-        Debug.Log(voxelMap[0,0,0].blockName);
 
+        VoxelState[,,] newVoxelStates = new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
+
+        for (int x = 0; x < VoxelData.chunkSize.x; x++)
+        {
+            for (int y = 0; y < VoxelData.chunkSize.y; y++)
+            {
+                for (int z = 0; z < VoxelData.chunkSize.z; z++)
+                {
+
+                    // Chunk rotation system
+                    Vector3 voxelPos = new Vector3(x, y, z);
+                    Vector3 pos = voxelPos;
+                    for (int i = 0; i < rotations; i++)
+                    {
+                        pos.z = VoxelData.chunkSize.x - 1 - voxelPos.x;
+                        pos.x = voxelPos.z;
+
+                        voxelPos = pos;
+                    }
+
+                    VoxelState vs = new VoxelState(0);
+
+                    if (IsVoxelInChunk(x, y, z))
+                    {
+                        vs.blockName = voxelMap[x, y, z].blockName;
+                        vs.id = voxelMap[x, y, z].id;
+                        vs.voxelType = voxelMap[x, y, z].voxelType;
+                    }
+
+                    try
+                    {
+                        newVoxelStates[(int)pos.x, (int)pos.y, (int)pos.z] = vs;
+                    }
+                    catch
+                    {
+                        Debug.LogError(new Vector3Int((int)pos.x, (int)pos.y, (int)pos.z));
+                    }
+                }
+            }
+        }
+
+        voxelMap = newVoxelStates;
 
         CreateMeshData();
         CreateMesh();
@@ -711,7 +831,9 @@ public class VoxelMapData
             {
                 for (int z = 0; z < VoxelData.chunkSize.z; z++)
                 {
+                    
                     int index = VoxelData.chunkSize.y * VoxelData.chunkSize.x * z + VoxelData.chunkSize.x * y + x;
+                    
                     fullVoxelMap[x, y, z] = voxelMaps[index];
                 }
             }

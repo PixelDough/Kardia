@@ -42,17 +42,126 @@ public class World : MonoBehaviour
             blockNames.Add(bt.name);
         }
 
-        for(int x = 0; x < VoxelData.worldSizeInChunks.x; x++)
+        RenderSettings.fogColor = material.GetColor("_FogColor");
+
+
+        // Populate room map
+        for (int x = 0; x < VoxelData.worldSizeInChunks.x; x++)
         {
             for (int y = 0; y < VoxelData.worldSizeInChunks.y; y++)
             {
                 for (int z = 0; z < VoxelData.worldSizeInChunks.z; z++)
                 {
-                    rooms[x, y, z] = new Room(Room.Openings.Front & Room.Openings.Up);
-                    chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this, (VoxelData.worldSizeInChunks.x > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x-1 || y == 0 || y == VoxelData.worldSizeInChunks.y-1 || z == 0 || z == VoxelData.worldSizeInChunks.z-1));
+                    rooms[x, y, z] = new Room(Room.Openings.Front & Room.Openings.Up, 0, 0);
+                    rooms[x, y, z] = PickRoomToSpawn(rooms[x, y, z]);
+                    chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this, (VoxelData.worldSizeInChunks.x > 1 && VoxelData.worldSizeInChunks.y > 1 && VoxelData.worldSizeInChunks.z > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x-1 || y == 0 || y == VoxelData.worldSizeInChunks.y-1 || z == 0 || z == VoxelData.worldSizeInChunks.z-1));
                 }
             }
         }
+    }
+
+
+    public Room PickRoomToSpawn(Room room)
+    {
+        string roomType = "";
+        roomType += ((room.openings & Room.Openings.Front) == Room.Openings.Front ? "f" : "");
+        roomType += ((room.openings & Room.Openings.Right) == Room.Openings.Front ? "r" : "");
+        roomType += ((room.openings & Room.Openings.Back) == Room.Openings.Front ? "b" : "");
+        roomType += ((room.openings & Room.Openings.Left) == Room.Openings.Front ? "l" : "");
+        roomType += ((room.openings & Room.Openings.Up) == Room.Openings.Front ? "u" : "");
+        roomType += ((room.openings & Room.Openings.Down) == Room.Openings.Front ? "d" : "");
+
+        int roomToSpawn = 0;
+        int rotation = 0;
+        bool hasUp = false;
+        bool hasDown = false;
+
+        if (roomType.Contains("u"))
+        {
+            hasUp = true;
+            roomType.Remove(roomType.IndexOf("u"));
+        }
+        if (roomType.Contains("d"))
+        {
+            hasDown = true;
+            roomType.Remove(roomType.IndexOf("d"));
+        }
+        
+        switch (roomType)
+        {
+            case "f":
+                roomToSpawn = 1;
+                rotation = 0;
+                break;
+            case "r":
+                roomToSpawn = 1;
+                rotation = 1;
+                break;
+            case "b":
+                roomToSpawn = 1;
+                rotation = 2;
+                break;
+            case "l":
+                roomToSpawn = 1;
+                rotation = 3;
+                break;
+
+            case "fr":
+                roomToSpawn = 2;
+                rotation = 0;
+                break;
+            case "rb":
+                roomToSpawn = 2;
+                rotation = 1;
+                break;
+            case "bl":
+                roomToSpawn = 2;
+                rotation = 2;
+                break;
+            case "lf":
+                roomToSpawn = 2;
+                rotation = 3;
+                break;
+
+            case "fb":
+                roomToSpawn = 3;
+                rotation = Random.Range(0,2) * 2;
+                break;
+            case "rl":
+                roomToSpawn = 3;
+                rotation = Random.Range(0, 2) * 2;
+                break;
+
+            case "frb":
+                roomToSpawn = 4;
+                rotation = 0;
+                break;
+            case "rbl":
+                roomToSpawn = 4;
+                rotation = 1;
+                break;
+            case "blf":
+                roomToSpawn = 4;
+                rotation = 2;
+                break;
+            case "lfr":
+                roomToSpawn = 4;
+                rotation = 3;
+                break;
+
+            case "frbl":
+                roomToSpawn = 5;
+                rotation = Random.Range(0, 4);
+                break;
+        }
+
+        if (hasUp) roomToSpawn += 5;
+        if (hasDown) roomToSpawn += 10;
+
+        room.roomTypeID = roomToSpawn;
+        room.rotations = rotation;
+
+        return room;
     }
 
 
@@ -103,14 +212,19 @@ public class Room
 {
 
     public Openings openings;
+    public int roomTypeID;
+    public int rotations;
 
-    public Room(Openings openings)
+    public Room(Openings _openings, int _roomTypeID, int _rotations)
     {
         // EXAMPLE: How to add masks to a flag
         openings |= Openings.Front | Openings.Left;
 
         // EXAMPLE: How to remove masks from a flag
         openings &= ~Openings.Front & ~Openings.Left;
+
+        roomTypeID = _roomTypeID;
+        rotations = _rotations;
     }
 
     [System.Flags]
