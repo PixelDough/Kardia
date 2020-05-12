@@ -164,12 +164,12 @@ public class PlayerController : MonoBehaviour
 
         finalMovementVector = (input * speedMultiplier);
 
-        if (player.GetButton(RewiredConsts.Action.Jump))
+        //if (player.GetButton(RewiredConsts.Action.Jump))
             DoClimbing();
 
         if (isClimbing)
         {
-            if (player.GetButtonDown(RewiredConsts.Action.Jump))
+            if (player.GetButton(RewiredConsts.Action.Jump))
             {
                 isClimbing = false;
                 rb.isKinematic = false;

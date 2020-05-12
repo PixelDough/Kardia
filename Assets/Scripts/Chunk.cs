@@ -53,11 +53,13 @@ public class Chunk
         meshFilter = chunkObject.AddComponent<MeshFilter>();
         meshRenderer = chunkObject.AddComponent<MeshRenderer>();
         meshCollider = chunkObject.AddComponent<MeshCollider>();
-        chunkObject.isStatic = true;
+        chunkObject.isStatic = false;
         chunkObject.tag = "Wall";
         chunkObject.layer = LayerMask.NameToLayer("Wall");
 
-        meshRenderer.material = world.material;
+        meshRenderer.material = world.zoneType.blockMaterial;
+        meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        //meshRenderer.receiveShadows = false;
 
         chunkObject.transform.SetParent(world.transform);
         chunkObject.transform.position = new Vector3(coord.x * VoxelData.chunkSize.x, coord.y * VoxelData.chunkSize.y, coord.z * VoxelData.chunkSize.z);
@@ -66,11 +68,29 @@ public class Chunk
 
         GenerateVoxelMap();
 
-        if (!isBorderChunk)
+        if (!isBorderChunk && VoxelData.chunkSize.x > 1 && VoxelData.chunkSize.y > 1 && VoxelData.chunkSize.z > 1)
         {
-            string[] chunkFiles = Directory.GetFiles(Application.streamingAssetsPath + "/Rooms", "tomb_*.chunk");
-            string selectedChunkFile = Path.GetFileNameWithoutExtension(chunkFiles[Random.Range(0, chunkFiles.Length)]);
-            LoadChunk(selectedChunkFile);
+            //string roomExtension = "%";
+            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Front)) roomExtension += "F";
+            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Right)) roomExtension += "R";
+            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Back)) roomExtension += "B";
+            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Left)) roomExtension += "L";
+            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Up)) roomExtension += "U";
+            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Down)) roomExtension += "D";
+            //roomExtension += "%";
+
+            string roomExtension = "%";
+            roomExtension += world.rooms[coord.x, coord.y, coord.z].roomTypeID;
+            roomExtension += "%";
+
+            Debug.Log(roomExtension);
+
+            string[] chunkFiles = Directory.GetFiles(Application.streamingAssetsPath + "/Rooms", "tomb_*" + roomExtension + "*.chunk");
+            if (chunkFiles.Length > 0)
+            {
+                string selectedChunkFile = Path.GetFileNameWithoutExtension(chunkFiles[Random.Range(0, chunkFiles.Length)]);
+                LoadChunk(selectedChunkFile);
+            }
         }
 
 

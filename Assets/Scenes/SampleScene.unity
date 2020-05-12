@@ -17,7 +17,7 @@ RenderSettings:
   m_Fog: 1
   m_FogColor: {r: 0.66, g: 0.43230003, b: 0.36300004, a: 1}
   m_FogMode: 2
-  m_FogDensity: 0.1
+  m_FogDensity: 0.11
   m_LinearFogStart: 10
   m_LinearFogEnd: 15
   m_AmbientSkyColor: {r: 0.4, g: 0.4, b: 0.4, a: 1}
@@ -730,8 +730,7 @@ MonoBehaviour:
   spawn: {x: 0, y: 0, z: 0}
   climbZonePrefab: {fileID: 5645407225081216221, guid: 3d3a5f876bc29984db6b1df4dafa9ae5,
     type: 3}
-  material: {fileID: 2100000, guid: 10c4710976e0f224aa439e8bb72cc051, type: 2}
-  materialTransparent: {fileID: 2100000, guid: de4c3232cbfa76744be097b35f81996f, type: 2}
+  zoneType: {fileID: 11400000, guid: b159ca0521b815647b62adc1f939d897, type: 2}
   blockTypes:
   - textureSideFace: {fileID: 0}
     textureTopBottomFace: {fileID: 0}
@@ -3349,7 +3348,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -712.5, y: -81.5}
+  m_AnchoredPosition: {x: -712.49994, y: -81.5}
   m_SizeDelta: {x: -1447.8, y: -187}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &925625754
@@ -4434,7 +4433,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_AdditionalShaderChannelsFlag: 25
+  m_AdditionalShaderChannelsFlag: 31
   m_SortingLayerID: 0
   m_SortingOrder: 999
   m_TargetDisplay: 0

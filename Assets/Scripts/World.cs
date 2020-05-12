@@ -12,10 +12,7 @@ public class World : MonoBehaviour
     public Transform player;
     public Vector3 spawn;
 
-    public GameObject climbZonePrefab;
-
-    public Material material;
-    public Material materialTransparent;
+    public ZoneType zoneType;
 
     public Room[,,] rooms = new Room[VoxelData.worldSizeInChunks.x, VoxelData.worldSizeInChunks.y, VoxelData.worldSizeInChunks.z];
 
@@ -42,8 +39,50 @@ public class World : MonoBehaviour
             blockNames.Add(bt.name);
         }
 
-        RenderSettings.fogColor = material.GetColor("_FogColor");
+        RenderSettings.fogColor = zoneType.fogColor;
 
+
+        List<ChunkCoord> visitedRooms = new List<ChunkCoord>();
+        visitedRooms.Add(new ChunkCoord(0, rooms.GetLength(1)-1, 0));
+
+        //while (visitedRooms.Count > 0)
+        //{
+
+        //    ChunkCoord roomPick = visitedRooms[Random.Range(0, visitedRooms.Count)];
+        //    Vector3 roomPickVector3 = new Vector3(roomPick.x, roomPick.y, roomPick.z);
+        //    Room.Openings directionToOpen = (Room.Openings)Random.Range(0, (int)Room.Openings.Count);
+
+        //    switch (directionToOpen)
+        //    {
+        //        case Room.Openings.Front:
+        //            Vector3 roomCheck = roomPickVector3 + Vector3.forward;
+        //            if (IsChunkInWorld(roomCheck))
+        //            {
+        //                rooms[roomPick.x, roomPick.y, roomPick.z].openings |= directionToOpen;
+        //                rooms[(int)roomCheck.x, (int)roomCheck.y, (int)roomCheck.z].openings |= Room.Openings.Back;
+        //            }
+        //            break;
+        //        case Room.Openings.Right:
+
+        //            break;
+        //        case Room.Openings.Back:
+
+        //            break;
+        //        case Room.Openings.Left:
+
+        //            break;
+        //        case Room.Openings.Up:
+
+        //            break;
+        //        case Room.Openings.Down:
+
+        //            break;
+        //    }
+
+
+
+        //}
+        
 
         // Populate room map
         for (int x = 0; x < VoxelData.worldSizeInChunks.x; x++)
@@ -52,9 +91,9 @@ public class World : MonoBehaviour
             {
                 for (int z = 0; z < VoxelData.worldSizeInChunks.z; z++)
                 {
-                    rooms[x, y, z] = new Room(Room.Openings.Front & Room.Openings.Up, 0, 0);
+                    rooms[x, y, z] = new Room(Room.Openings.Right | Room.Openings.Left, 0, Random.Range(0,4));
                     rooms[x, y, z] = PickRoomToSpawn(rooms[x, y, z]);
-                    chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this, (VoxelData.worldSizeInChunks.x > 1 && VoxelData.worldSizeInChunks.y > 1 && VoxelData.worldSizeInChunks.z > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x-1 || y == 0 || y == VoxelData.worldSizeInChunks.y-1 || z == 0 || z == VoxelData.worldSizeInChunks.z-1));
+                    chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this, (VoxelData.worldSizeInChunks.x > 1 && VoxelData.worldSizeInChunks.y > 1 && VoxelData.worldSizeInChunks.z > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x-1 || y == 0 || y == VoxelData.worldSizeInChunks.y-1 || z == 0 || z == VoxelData.worldSizeInChunks.z-1), rooms[x,y,z].rotations);
                 }
             }
         }
@@ -64,12 +103,12 @@ public class World : MonoBehaviour
     public Room PickRoomToSpawn(Room room)
     {
         string roomType = "";
-        roomType += ((room.openings & Room.Openings.Front) == Room.Openings.Front ? "f" : "");
-        roomType += ((room.openings & Room.Openings.Right) == Room.Openings.Front ? "r" : "");
-        roomType += ((room.openings & Room.Openings.Back) == Room.Openings.Front ? "b" : "");
-        roomType += ((room.openings & Room.Openings.Left) == Room.Openings.Front ? "l" : "");
-        roomType += ((room.openings & Room.Openings.Up) == Room.Openings.Front ? "u" : "");
-        roomType += ((room.openings & Room.Openings.Down) == Room.Openings.Front ? "d" : "");
+        if (room.openings.HasFlag(Room.Openings.Front)) roomType += "f";
+        if (room.openings.HasFlag(Room.Openings.Right)) roomType += "r";
+        if (room.openings.HasFlag(Room.Openings.Back)) roomType += "b";
+        if (room.openings.HasFlag(Room.Openings.Left)) roomType += "l";
+        if (room.openings.HasFlag(Room.Openings.Up)) roomType += "u";
+        if (room.openings.HasFlag(Room.Openings.Down)) roomType += "d";
 
         int roomToSpawn = 0;
         int rotation = 0;
@@ -79,11 +118,13 @@ public class World : MonoBehaviour
         if (roomType.Contains("u"))
         {
             hasUp = true;
+            rotation = Random.Range(0, 4); // Set random rotation for vertical tunnels, gets overridden if there are any horizontally planar entrances.
             roomType.Remove(roomType.IndexOf("u"));
         }
         if (roomType.Contains("d"))
         {
             hasDown = true;
+            rotation = Random.Range(0, 4); // Set random rotation for vertical tunnels, gets overridden if there are any horizontally planar entrances.
             roomType.Remove(roomType.IndexOf("d"));
         }
         
@@ -125,11 +166,11 @@ public class World : MonoBehaviour
 
             case "fb":
                 roomToSpawn = 3;
-                rotation = Random.Range(0,2) * 2;
+                rotation = Random.Range(0, 2) * 2;
                 break;
             case "rl":
                 roomToSpawn = 3;
-                rotation = Random.Range(0, 2) * 2;
+                rotation = (Random.Range(0, 2) * 2) + 1;
                 break;
 
             case "frb":
@@ -188,6 +229,20 @@ public class World : MonoBehaviour
 
     }
 
+    public bool IsChunkInWorld(ChunkCoord chunkCoord)
+    {
+        if (chunkCoord.x < 0 && chunkCoord.x > VoxelData.worldSizeInChunks.x) return false;
+        if (chunkCoord.y < 0 && chunkCoord.y > VoxelData.worldSizeInChunks.y) return false;
+        if (chunkCoord.z < 0 && chunkCoord.z > VoxelData.worldSizeInChunks.z) return false;
+
+        return true;
+    }
+
+    public bool IsChunkInWorld(Vector3 chunkCoordVector3)
+    {
+        return IsChunkInWorld(new ChunkCoord(chunkCoordVector3));
+    }
+
     public void DoAllSpawners()
     {
         foreach(Chunk c in chunks)
@@ -217,12 +272,13 @@ public class Room
 
     public Room(Openings _openings, int _roomTypeID, int _rotations)
     {
-        // EXAMPLE: How to add masks to a flag
-        openings |= Openings.Front | Openings.Left;
+        //// EXAMPLE: How to add masks to a flag
+        //openings |= Openings.Front | Openings.Left;
 
-        // EXAMPLE: How to remove masks from a flag
-        openings &= ~Openings.Front & ~Openings.Left;
+        //// EXAMPLE: How to remove masks from a flag
+        //openings &= ~Openings.Front & ~Openings.Left;
 
+        openings = _openings;
         roomTypeID = _roomTypeID;
         rotations = _rotations;
     }
@@ -234,7 +290,8 @@ public class Room
         Up = 1 << 3, 
         Down = 1 << 4, 
         Left = 1 << 5, 
-        Right = 1 << 6 
+        Right = 1 << 6,
+        Count
     };
 
 }

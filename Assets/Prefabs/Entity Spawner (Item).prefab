@@ -70,7 +70,7 @@ PrefabInstance:
     - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
       propertyPath: spawnPool.Array.size
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
@@ -123,6 +123,12 @@ PrefabInstance:
       propertyPath: accomodateForVertexWobble
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 8049632283383549721, guid: fc7f4915ad3a65d43b8674fffa409388,
+        type: 3}
+      propertyPath: spawnPool.Array.data[1]
+      value: 
+      objectReference: {fileID: 9024318894882876723, guid: e59d3395642e17f498202762f6a024b7,
+        type: 3}
     - target: {fileID: 4371660188384516073, guid: fc7f4915ad3a65d43b8674fffa409388,
         type: 3}
       propertyPath: m_Sprite

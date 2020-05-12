@@ -49,12 +49,12 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 0
+    m_Type: 1
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
     m_Bias: 0.06
-    m_NormalBias: 0.55
+    m_NormalBias: 0.32
     m_NearPlane: 0.1
     m_CullingMatrixOverride:
       e00: 1
