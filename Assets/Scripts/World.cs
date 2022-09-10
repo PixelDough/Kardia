@@ -1,9 +1,12 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Threading;
 using System.IO;
 using Sirenix.OdinInspector;
+using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
 
 
 public class World : MonoBehaviour
@@ -26,14 +29,31 @@ public class World : MonoBehaviour
 
     public Chunk[,,] chunks = new Chunk[VoxelData.worldSizeInChunks.x, VoxelData.worldSizeInChunks.y, VoxelData.worldSizeInChunks.z];
 
-    List<ChunkCoord> chunksToCreate = new List<ChunkCoord>();
+    private List<ChunkCoord> _chunksToCreate = new List<ChunkCoord>();
     public List<Chunk> chunksToUpdate = new List<Chunk>();
     public Queue<Chunk> chunksToDraw = new Queue<Chunk>();
 
+    [SerializeField] private Material material;
+    [SerializeField] private Texture2D[] textures;
+    private Texture2DArray _texture2DArray;
 
     private void Start()
     {
+        _texture2DArray = new Texture2DArray(16, 16, textures.Length, TextureFormat.RGBA32, true, false);
+        _texture2DArray.filterMode = FilterMode.Point;
+        _texture2DArray.wrapMode = TextureWrapMode.Repeat;
 
+        for (int i = 0; i < textures.Length; i++)
+        {
+            Texture2D tex = textures[i];
+            Graphics.CopyTexture(tex, 0, _texture2DArray, i);
+            // _texture2DArray.SetPixels(tex.GetPixels(0), i, 0);
+        }
+        
+        _texture2DArray.Apply(false, true);
+        
+        material.SetTexture("_MainTex", _texture2DArray);
+            
         foreach(BlockType bt in blockTypes)
         {
             blockNames.Add(bt.name);
@@ -93,7 +113,12 @@ public class World : MonoBehaviour
                 {
                     rooms[x, y, z] = new Room(Room.Openings.Right | Room.Openings.Left, 0, Random.Range(0,4));
                     rooms[x, y, z] = PickRoomToSpawn(rooms[x, y, z]);
-                    chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this, (VoxelData.worldSizeInChunks.x > 1 && VoxelData.worldSizeInChunks.y > 1 && VoxelData.worldSizeInChunks.z > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x-1 || y == 0 || y == VoxelData.worldSizeInChunks.y-1 || z == 0 || z == VoxelData.worldSizeInChunks.z-1), rooms[x,y,z].rotations);
+                    chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this,
+                        (VoxelData.worldSizeInChunks.x > 1 && VoxelData.worldSizeInChunks.y > 1 &&
+                         VoxelData.worldSizeInChunks.z > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x - 1 ||
+                                                                y == 0 || y == VoxelData.worldSizeInChunks.y - 1 ||
+                                                                z == 0 || z == VoxelData.worldSizeInChunks.z - 1),
+                        rooms[x, y, z].rotations);
                 }
             }
         }
@@ -119,13 +144,13 @@ public class World : MonoBehaviour
         {
             hasUp = true;
             rotation = Random.Range(0, 4); // Set random rotation for vertical tunnels, gets overridden if there are any horizontally planar entrances.
-            roomType.Remove(roomType.IndexOf("u"));
+            roomType.Remove(roomType.IndexOf("u", StringComparison.Ordinal));
         }
         if (roomType.Contains("d"))
         {
             hasDown = true;
             rotation = Random.Range(0, 4); // Set random rotation for vertical tunnels, gets overridden if there are any horizontally planar entrances.
-            roomType.Remove(roomType.IndexOf("d"));
+            roomType.Remove(roomType.IndexOf("d", StringComparison.Ordinal));
         }
         
         switch (roomType)

@@ -21,8 +21,9 @@ namespace AmplifyShaderEditor
 			AddOutputVectorPorts( WirePortDataType.FLOAT3, "XYZ" );
 			m_drawPreviewAsSphere = true;
 			m_previewShaderGUID = "5540033c6c52f51468938c1a42bd2730";
-			m_textLabelWidth = 162;
+			m_textLabelWidth = 180;
 			UpdateMaterialPass();
+			m_autoWrapProperties = true;
 		}
 
 		public override void DrawProperties()

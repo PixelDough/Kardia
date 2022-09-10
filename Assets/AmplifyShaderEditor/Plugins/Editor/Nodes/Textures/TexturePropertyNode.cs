@@ -106,6 +106,8 @@ namespace AmplifyShaderEditor
 
 		protected bool m_isEditingPicker;
 
+		protected bool m_forceSamplingMacrosGen = false;
+
 		public TexturePropertyNode() : base() { }
 		public TexturePropertyNode( int uniqueId, float x, float y, float width, float height ) : base( uniqueId, x, y, width, height ) { }
 		protected override void CommonInit( int uniqueId )
@@ -115,7 +117,8 @@ namespace AmplifyShaderEditor
 			m_defaultTextureValue = TexturePropertyValues.white;
 			m_insideSize.Set( PreviewSizeX, PreviewSizeY + 5 );
 			AddOutputPort( WirePortDataType.SAMPLER2D, "Tex" );
-			m_outputPorts[ 0 ].CreatePortRestrictions( WirePortDataType.SAMPLER1D, WirePortDataType.SAMPLER2D, WirePortDataType.SAMPLER3D, WirePortDataType.SAMPLERCUBE, WirePortDataType.OBJECT );
+			AddOutputPort( WirePortDataType.SAMPLERSTATE, "SS" );
+			m_outputPorts[ 0 ].CreatePortRestrictions( WirePortDataType.SAMPLER1D, WirePortDataType.SAMPLER2D, WirePortDataType.SAMPLER3D, WirePortDataType.SAMPLERCUBE, WirePortDataType.SAMPLER2DARRAY, WirePortDataType.OBJECT );
 			m_currentParameterType = PropertyType.Property;
 			m_customPrefix = "Texture ";
 			m_drawPrecisionUI = false;
@@ -127,6 +130,7 @@ namespace AmplifyShaderEditor
 			m_longNameSize = 225;
 			m_availableAttribs.Add( new PropertyAttributes( "No Scale Offset", "[NoScaleOffset]" ) );
 			m_availableAttribs.Add( new PropertyAttributes( "Normal", "[Normal]" ) );
+			m_availableAttribs.Add( new PropertyAttributes( "Single Line Texture", "[SingleLineTexture]" ) );
 			m_showPreview = true;
 			m_drawPreviewExpander = false;
 			m_drawPreview = false;
@@ -190,6 +194,7 @@ namespace AmplifyShaderEditor
 					m_defaultId = Shader.PropertyToID( "_Default" );
 
 				PreviewMaterial.SetInt( m_defaultId, ( (int)m_defaultTextureValue ) + 1 );
+				m_previewMaterialPassId = 0;
 			}
 			else
 			{
@@ -201,6 +206,7 @@ namespace AmplifyShaderEditor
 				if( m_typeId == -1 )
 					m_typeId = Shader.PropertyToID( "_Type" );
 
+				m_previewMaterialPassId = 1; 
 				SetPreviewTexture( Value );
 				//if( Value is Cubemap )
 				//{
@@ -359,27 +365,10 @@ namespace AmplifyShaderEditor
 
 		public string GetTexture2DUniformValue()
 		{
-			ParentGraph outsideGraph = UIUtils.CurrentWindow.OutsideGraph;
-			if( outsideGraph.SamplingThroughMacros )
-			{
-				if( outsideGraph.IsSRP )
-				{
-					if( m_useSamplerArrayIdx == 0 )
-						return string.Format( Constants.TexDeclarationSRPMacros[ TextureType.Texture2D ], PropertyName );
-					else
-						return string.Format( Constants.TexDeclarationNoSamplerSRPMacros[ TextureType.Texture2D ], PropertyName );
-				}
-				else
-				{
-					if( m_useSamplerArrayIdx == 0 )
-						return string.Format( Constants.TexDeclarationStandardMacros[ TextureType.Texture2D ], PropertyName );
-					else
-						return string.Format( Constants.TexDeclarationNoSamplerStandardMacros[ TextureType.Texture2D ], PropertyName );
-				}
-
-			}
-
-			return "uniform sampler2D " + PropertyName + ";";
+			if( PropertyName == "_CameraDepthTexture" )
+				return Constants.CameraDepthTextureValue;
+			else
+				return GeneratorUtils.GetPropertyDeclaraction( PropertyName, TextureType.Texture2D, ";" );
 		}
 
 		//Texture3D
@@ -390,25 +379,7 @@ namespace AmplifyShaderEditor
 
 		public string GetTexture3DUniformValue()
 		{
-			ParentGraph outsideGraph = UIUtils.CurrentWindow.OutsideGraph;
-			if( outsideGraph.SamplingThroughMacros )
-			{
-				if( outsideGraph.IsSRP )
-				{
-					if( m_useSamplerArrayIdx == 0 )
-						return string.Format( Constants.TexDeclarationSRPMacros[ TextureType.Texture3D ], PropertyName );
-					else
-						return string.Format( Constants.TexDeclarationNoSamplerSRPMacros[ TextureType.Texture3D ], PropertyName );
-				}
-				else
-				{
-					if( m_useSamplerArrayIdx == 0 )
-						return string.Format( Constants.TexDeclarationStandardMacros[ TextureType.Texture3D ], PropertyName );
-					else
-						return string.Format( Constants.TexDeclarationNoSamplerStandardMacros[ TextureType.Texture3D ], PropertyName );
-				}
-			}
-			return "uniform sampler3D " + PropertyName + ";";
+			return GeneratorUtils.GetPropertyDeclaraction( PropertyName, TextureType.Texture3D, ";" );
 		}
 
 		// Cube
@@ -419,26 +390,7 @@ namespace AmplifyShaderEditor
 
 		public string GetCubeUniformValue()
 		{
-			ParentGraph outsideGraph = UIUtils.CurrentWindow.OutsideGraph;
-			if( outsideGraph.SamplingThroughMacros )
-			{
-				if( outsideGraph.IsSRP )
-				{
-					if( m_useSamplerArrayIdx == 0 )
-						return string.Format( Constants.TexDeclarationSRPMacros[ TextureType.Cube ], PropertyName );
-					else
-						return string.Format( Constants.TexDeclarationNoSamplerSRPMacros[ TextureType.Cube ], PropertyName );
-				}
-				else
-				{
-					if( m_useSamplerArrayIdx == 0 )
-						return string.Format( Constants.TexDeclarationStandardMacros[ TextureType.Cube ], PropertyName );
-					else
-						return string.Format( Constants.TexDeclarationNoSamplerStandardMacros[ TextureType.Cube ], PropertyName );
-				}
-			}
-
-			return "uniform samplerCUBE " + PropertyName + ";";
+			return GeneratorUtils.GetPropertyDeclaraction( PropertyName, TextureType.Cube, ";" );
 		}
 
 		// Texture2DArray
@@ -449,26 +401,7 @@ namespace AmplifyShaderEditor
 
 		public string GetTexture2DArrayUniformValue()
 		{
-			ParentGraph outsideGraph = UIUtils.CurrentWindow.OutsideGraph;
-			if( outsideGraph.SamplingThroughMacros )
-			{
-				if( outsideGraph.IsSRP )
-				{
-					if( m_useSamplerArrayIdx == 0 )
-						return string.Format( Constants.TexDeclarationSRPMacros[ TextureType.Texture2DArray ], PropertyName );
-					else
-						return string.Format( Constants.TexDeclarationNoSamplerSRPMacros[ TextureType.Texture2DArray ], PropertyName );
-				}
-				else
-				{
-					if( m_useSamplerArrayIdx == 0 )
-						return string.Format( Constants.TexDeclarationStandardMacros[ TextureType.Texture2DArray ], PropertyName );
-					else
-						return string.Format( Constants.TexDeclarationNoSamplerStandardMacros[ TextureType.Texture2DArray ], PropertyName );
-				}
-			}
-
-			return "uniform TEXTURE2D_ARRAY( " + PropertyName + " );" + "\nuniform SAMPLER( sampler" + PropertyName + " );";
+			return GeneratorUtils.GetPropertyDeclaraction( PropertyName, TextureType.Texture2DArray, ";" );
 		}
 
 		public override void DrawMainPropertyBlock()
@@ -549,7 +482,7 @@ namespace AmplifyShaderEditor
 				m_outputPorts[ 0 ].ChangeType( WirePortDataType.SAMPLERCUBE, false );
 				break;
 				case TextureType.Texture2DArray:
-				m_outputPorts[ 0 ].ChangeType( WirePortDataType.SAMPLER2D, false );
+				m_outputPorts[ 0 ].ChangeType( WirePortDataType.SAMPLER2DARRAY, false );
 				break;
 			}
 
@@ -808,10 +741,44 @@ namespace AmplifyShaderEditor
 			GUI.Label( newRect, string.Empty, UIUtils.GetCustomStyle( CustomStyle.SamplerFrame ) );
 		}
 
+		public override void CheckIfAutoRegister( ref MasterNodeDataCollector dataCollector )
+		{
+			// Also testing inside shader function because node can be used indirectly over a custom expression and directly over a Function Output node 
+			// That isn't being used externaly making it to not be registered ( since m_connStatus it set to Connected by being connected to an output node
+			if( CurrentParameterType != PropertyType.Constant && m_autoRegister && ( m_connStatus != NodeConnectionStatus.Connected || InsideShaderFunction ) )
+			{
+				RegisterProperty( ref dataCollector );
+				if( m_autoRegister && m_containerGraph.ParentWindow.OutsideGraph.SamplingMacros )
+				{
+					GeneratorUtils.GenerateSamplerState( ref dataCollector, UniqueId, PropertyName , m_variableMode );
+				}
+			}
+		}
+
+		public string GenerateSamplerState( ref MasterNodeDataCollector dataCollector )
+		{
+			return GeneratorUtils.GenerateSamplerState( ref dataCollector, UniqueId, PropertyName , m_variableMode );
+		}
+
+		public virtual string GenerateSamplerPropertyName( int outputId, ref MasterNodeDataCollector dataCollector )
+		{
+			string generatedSamplerState = string.Empty;
+
+			if( outputId > 0 || m_forceSamplingMacrosGen )
+			{
+				generatedSamplerState = GeneratorUtils.GenerateSamplerState( ref dataCollector, UniqueId, PropertyName , m_variableMode );
+			}
+
+			if( outputId > 0 )
+				return generatedSamplerState;
+			else
+				return PropertyName;
+		}
+
 		public string BaseGenerateShaderForOutput( int outputId, ref MasterNodeDataCollector dataCollector, bool ignoreLocalVar )
 		{
 			base.GenerateShaderForOutput( outputId, ref dataCollector, ignoreLocalVar );
-			return PropertyName;
+			return GenerateSamplerPropertyName( outputId , ref dataCollector );
 		}
 
 		public override string GenerateShaderForOutput( int outputId, ref MasterNodeDataCollector dataCollector, bool ignoreLocalVar )
@@ -865,6 +832,11 @@ namespace AmplifyShaderEditor
 			return true;
 		}
 
+		public void ReadFromStringArray( ref string[] nodeParams )
+		{
+			base.ReadFromString( ref nodeParams );
+		}
+
 		public override void ReadFromString( ref string[] nodeParams )
 		{
 			base.ReadFromString( ref nodeParams );
@@ -913,6 +885,13 @@ namespace AmplifyShaderEditor
 			{
 				CheckTextureImporter( true, true );
 			}
+			ConfigureInputPorts();
+			ConfigureOutputPorts();
+		}
+
+		public override void RefreshExternalReferences()
+		{
+			base.RefreshExternalReferences();
 			ConfigureInputPorts();
 			ConfigureOutputPorts();
 		}
@@ -1032,17 +1011,19 @@ namespace AmplifyShaderEditor
 
 		public override bool GetUniformData( out string dataType, out string dataName, ref bool fullValue )
 		{
+			m_excludeUniform = false;
 			ParentGraph outsideGraph = UIUtils.CurrentWindow.OutsideGraph;
-			if( outsideGraph.SamplingThroughMacros )
+#if UNITY_2018_1_OR_NEWER
+			if( outsideGraph.SamplingMacros || m_currentType == TextureType.Texture2DArray )
+#else
+			if( ( outsideGraph.SamplingMacros && !outsideGraph.IsStandardSurface ) || m_currentType == TextureType.Texture2DArray )
+#endif
 			{
 				if( outsideGraph.IsSRP )
 				{
 					if( Constants.TexDeclarationSRPMacros.ContainsKey( m_currentType ) )
 					{
-						if( m_useSamplerArrayIdx == 0 )
-							dataName = string.Format( Constants.TexDeclarationSRPMacros[ m_currentType ], PropertyName );
-						else
-							dataName = string.Format( Constants.TexDeclarationNoSamplerSRPMacros[ m_currentType ], PropertyName );
+						dataName = GeneratorUtils.GetPropertyDeclaraction( PropertyName, m_currentType, ";" );
 						dataType = string.Empty;
 						fullValue = true;
 						return true;
@@ -1050,31 +1031,35 @@ namespace AmplifyShaderEditor
 				}
 				else if( Constants.TexDeclarationStandardMacros.ContainsKey( m_currentType ) )
 				{
-					if( m_useSamplerArrayIdx == 0 )
+#if !UNITY_2018_1_OR_NEWER
+					if( m_currentType == TextureType.Texture2DArray && outsideGraph.IsStandardSurface )
 						dataName = string.Format( Constants.TexDeclarationStandardMacros[ m_currentType ], PropertyName );
 					else
-						dataName = string.Format( Constants.TexDeclarationNoSamplerStandardMacros[ m_currentType ], PropertyName );
+#endif
+						dataName = GeneratorUtils.GetPropertyDeclaraction( PropertyName, m_currentType, ";" );
 					dataType = string.Empty;
 					fullValue = true;
 					return true;
 				}
 			}
 
-			if( m_currentType == TextureType.Texture2DArray )
+			//TODO: this is a hack and needs to be properly fixed
+#if UNITY_5_6_OR_NEWER
+			if( PropertyName == "_CameraDepthTexture" )
 			{
-				MasterNode masterNode = UIUtils.CurrentWindow.OutsideGraph.CurrentMasterNode;
-				if( masterNode.CurrentDataCollector.IsTemplate && masterNode.CurrentDataCollector.IsSRP )
+				if( m_containerGraph.ParentWindow.OutsideGraph.IsSRP )
 				{
-					dataType = "TEXTURE2D_ARRAY( " + PropertyName + "";
-					dataName = ");\nuniform SAMPLER( sampler" + PropertyName + " )";
+					UIUtils.ShowMessage( "Use Sampling Macros flag on master node properties is required to be turned on in order to properly declare _CameraDepthTexture over an SRP shader!" , MessageSeverity.Warning );
+				}
+				else
+				{
+					m_excludeUniform = true;
+					dataType = "UNITY_DECLARE_DEPTH_TEXTURE(";
+					dataName = m_propertyName + " )";
 					return true;
 				}
-				dataType = "UNITY_DECLARE_TEX2DARRAY(";
-				dataName = m_propertyName + " )";
-				return true;
 			}
-
-
+#endif
 			dataType = UIUtils.TextureTypeToCgType( m_currentType );
 			dataName = m_propertyName;
 			return true;
@@ -1156,5 +1141,6 @@ namespace AmplifyShaderEditor
 		{
 			get { return m_autocastMode; }
 		}
+		public bool ForceSamplingMacrosGen { set { m_forceSamplingMacrosGen = value; } }
 	}
 }

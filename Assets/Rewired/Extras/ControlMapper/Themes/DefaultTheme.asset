@@ -334,17 +334,23 @@ MonoBehaviour:
     _color: {r: 1, g: 1, b: 1, a: 1}
     _font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     _style: 0
-    _lineSpacing: 1
     _sizeMultiplier: 1
+    _lineSpacing: 1
+    _characterSpacing: 1
+    _wordSpacing: 1
   _buttonTextSettings:
     _color: {r: 1, g: 1, b: 1, a: 1}
     _font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     _style: 0
-    _lineSpacing: 1
     _sizeMultiplier: 1
+    _lineSpacing: 1
+    _characterSpacing: 1
+    _wordSpacing: 1
   _inputGridFieldTextSettings:
     _color: {r: 1, g: 1, b: 1, a: 1}
     _font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     _style: 0
-    _lineSpacing: 1
     _sizeMultiplier: 1
+    _lineSpacing: 1
+    _characterSpacing: 1
+    _wordSpacing: 1

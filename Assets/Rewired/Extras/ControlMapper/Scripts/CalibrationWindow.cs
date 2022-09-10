@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2015 Augie R. Maddox, Guavaman Enterprises. All rights reserved.
+// Copyright (c) 2015 Augie R. Maddox, Guavaman Enterprises. All rights reserved.
 
 #define REWIRED_CONTROL_MAPPER_USE_TMPRO
 
@@ -208,7 +208,7 @@ namespace Rewired.UI.ControlMapper {
                 Button button = instance.GetComponent<Button>();
                 button.onClick.AddListener(() => { OnAxisSelected(index, button); });
                 Text text = UnityTools.GetComponentInSelfOrChildren<Text>(instance);
-                if (text != null) text.text = joystick.AxisElementIdentifiers[i].name;
+                if (text != null) text.text = ControlMapper.GetLanguage().GetElementIdentifierName(joystick, joystick.AxisElementIdentifiers[i].id, AxisRange.Full);
                 if (buttonHeight == 0.0f) buttonHeight = UnityTools.GetComponentInSelfOrChildren<LayoutElement>(instance).minHeight;
                 axisButtons.Add(button);
             }

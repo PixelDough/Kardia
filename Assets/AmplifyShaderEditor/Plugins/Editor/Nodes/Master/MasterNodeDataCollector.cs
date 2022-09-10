@@ -15,12 +15,14 @@ namespace AmplifyShaderEditor
 		public int OrderIndex;
 		public string PropertyName;
 		public WirePortDataType DataType;
+		public bool IsDirective;
 
-		public PropertyDataCollector( int nodeId, string propertyName, int orderIndex = -1 )
+		public PropertyDataCollector( int nodeId, string propertyName, int orderIndex = -1, bool isDirective = false )
 		{
 			NodeId = nodeId;
 			PropertyName = propertyName;
 			OrderIndex = orderIndex;
+			IsDirective = isDirective;
 		}
 	}
 
@@ -74,6 +76,16 @@ namespace AmplifyShaderEditor
 		Required
 	}
 
+	[Flags]
+	public enum MacrosMask
+	{
+		NONE = 0,
+		AUTO = 1 << 1,
+		LOD = 1 << 2,
+		BIAS = 1 << 3,
+		GRAD = 1 << 4,
+	}
+
 	public class MasterNodeDataCollector
 	{
 		private bool m_showDebugMessages = false;
@@ -99,6 +111,8 @@ namespace AmplifyShaderEditor
 		private List<PropertyDataCollector> m_customInputList;
 		private List<PropertyDataCollector> m_propertiesList;
 		private List<PropertyDataCollector> m_instancedPropertiesList;
+		private List<PropertyDataCollector> m_dotsPropertiesList;
+		private List<PropertyDataCollector> m_dotsDefinesList;
 		private List<PropertyDataCollector> m_uniformsList;
 		private List<PropertyDataCollector> m_includesList;
 		private List<PropertyDataCollector> m_additionalDirectivesList;
@@ -116,6 +130,7 @@ namespace AmplifyShaderEditor
 		private List<PropertyDataCollector> m_aboveUsePassesList;
 		private List<PropertyDataCollector> m_belowUsePassesList;
 
+		private bool m_surfaceCustomShadowCaster = false;
 		private List<InputCoordsCollector> m_customShadowCoordsList;
 		private List<int> m_packSlotsList;
 		private string m_customAppDataItems;
@@ -124,7 +139,9 @@ namespace AmplifyShaderEditor
 		private Dictionary<string, PropertyDataCollector> m_customInputDict;
 		private Dictionary<string, PropertyDataCollector> m_propertiesDict;
 		private Dictionary<string, PropertyDataCollector> m_instancedPropertiesDict;
+		private Dictionary<string, PropertyDataCollector> m_dotsPropertiesDict;
 		private Dictionary<string, PropertyDataCollector> m_uniformsDict;
+		private Dictionary<string, PropertyDataCollector> m_softRegisteredUniformsDict;
 		private Dictionary<string, PropertyDataCollector> m_includesDict;
 		private Dictionary<string, PropertyDataCollector> m_additionalDirectivesDict;
 		private Dictionary<string, string> m_includesExclusionDict;
@@ -147,6 +164,17 @@ namespace AmplifyShaderEditor
 		private Dictionary<string, InputCoordsCollector> m_customShadowCoordsDict;
 
 		private TextureChannelUsage[] m_requireTextureProperty = { TextureChannelUsage.Not_Used, TextureChannelUsage.Not_Used, TextureChannelUsage.Not_Used, TextureChannelUsage.Not_Used };
+		private WirePortDataType[] m_textureChannelSize =
+		{
+			WirePortDataType.FLOAT2,
+			WirePortDataType.FLOAT2,
+			WirePortDataType.FLOAT2,
+			WirePortDataType.FLOAT2,
+			WirePortDataType.FLOAT2,
+			WirePortDataType.FLOAT2,
+			WirePortDataType.FLOAT2,
+			WirePortDataType.FLOAT2
+		};
 
 		private bool m_dirtyAppData;
 		private bool m_dirtyInputs;
@@ -176,6 +204,13 @@ namespace AmplifyShaderEditor
 		private bool m_usingViewDirection;
 		private bool m_usingLightAttenuation;
 		private bool m_usingArrayDerivatives;
+		private bool m_usingTextureArrays;
+		private bool m_usingExtraStandardMacros;
+		private MacrosMask m_using2DMacrosMask;
+		private MacrosMask m_using3DMacrosMask;
+		private MacrosMask m_usingCUBEMacrosMask;
+		private MacrosMask m_using2DArrayMacrosMask;
+		private bool m_usingExtra3DSRPMacros;
 
 		private bool m_usingHigherSizeTexcoords;
 		private bool m_usingCustomScreenPos;
@@ -242,6 +277,8 @@ namespace AmplifyShaderEditor
 			m_customInputList = new List<PropertyDataCollector>();
 			m_propertiesList = new List<PropertyDataCollector>();
 			m_instancedPropertiesList = new List<PropertyDataCollector>();
+			m_dotsPropertiesList = new List<PropertyDataCollector>();
+			m_dotsDefinesList = new List<PropertyDataCollector>();
 			m_uniformsList = new List<PropertyDataCollector>();
 			m_includesList = new List<PropertyDataCollector>();
 			m_additionalDirectivesList = new List<PropertyDataCollector>();
@@ -268,7 +305,9 @@ namespace AmplifyShaderEditor
 
 			m_propertiesDict = new Dictionary<string, PropertyDataCollector>();
 			m_instancedPropertiesDict = new Dictionary<string, PropertyDataCollector>();
+			m_dotsPropertiesDict = new Dictionary<string, PropertyDataCollector>();
 			m_uniformsDict = new Dictionary<string, PropertyDataCollector>();
+			m_softRegisteredUniformsDict = new Dictionary<string, PropertyDataCollector>();
 			m_includesDict = new Dictionary<string, PropertyDataCollector>();
 			m_additionalDirectivesDict = new Dictionary<string, PropertyDataCollector>();
 			m_includesExclusionDict = new Dictionary<string, string>();
@@ -323,6 +362,27 @@ namespace AmplifyShaderEditor
 			m_templateDataCollector = new TemplateDataCollector();
 		}
 
+		public void CopyTextureChannelSizeFrom( ref MasterNodeDataCollector dataCollector )
+		{
+			for( int i = 0 ; i < m_textureChannelSize.Length ; i++ )
+			{
+				SetTextureChannelSize( i , dataCollector.GetMaxTextureChannelSize( i ) );
+			}
+		}
+
+		public void SetTextureChannelSize( int channelIdx , WirePortDataType size )
+		{
+			if( size > m_textureChannelSize[ channelIdx ] )
+			{
+				m_textureChannelSize[ channelIdx ] = size;
+			}
+		}
+
+		public WirePortDataType GetMaxTextureChannelSize( int channelIdx )
+		{
+			return m_textureChannelSize[ channelIdx ];
+		}
+
 		public void SetChannelUsage( int channelId, TextureChannelUsage usage )
 		{
 			if( channelId > -1 && channelId < 4 )
@@ -336,7 +396,7 @@ namespace AmplifyShaderEditor
 
 			return TextureChannelUsage.Not_Used;
 		}
-		public string SurfaceVertexStructure { get { return ( m_dirtyAppData ? Constants.CustomAppDataFullName : Constants.AppDataFullName ); } }
+
 		public void OpenPerVertexHeader( bool includeCustomData )
 		{
 			string appData = "inout " + ( m_dirtyAppData ? Constants.CustomAppDataFullName : Constants.AppDataFullName ) + " ";
@@ -386,6 +446,7 @@ namespace AmplifyShaderEditor
 				}
 				break;
 			}
+			m_vertexData += "\t\t\t" + Constants.VertexShaderInputStr + ".vertex.w = 1;\n";
 		}
 
 
@@ -495,10 +556,10 @@ namespace AmplifyShaderEditor
 		{
 			if( string.IsNullOrEmpty( value ) )
 				return;
-
+					
 			if( !m_inputDict.ContainsKey( value ) )
 			{
-				m_inputDict.Add( value, new PropertyDataCollector( nodeId, value ) );
+				m_inputDict.Add( value, new PropertyDataCollector( nodeId, value ,-1, !addSemiColon) );
 				m_inputList.Add( m_inputDict[ value ] );
 
 				m_input += "\t\t\t" + value + ( ( addSemiColon ) ? ( ";\n" ) : "\n" );
@@ -563,6 +624,8 @@ namespace AmplifyShaderEditor
 				case WirePortDataType.SAMPLER2D:
 				case WirePortDataType.SAMPLER3D:
 				case WirePortDataType.SAMPLERCUBE:
+				case WirePortDataType.SAMPLER2DARRAY:
+				case WirePortDataType.SAMPLERSTATE:
 				return 0;
 			}
 		}
@@ -597,6 +660,26 @@ namespace AmplifyShaderEditor
 			if( m_dirtyInstancedProperties )
 			{
 				m_instancedProperties = string.Format( IOUtils.InstancedPropertiesBeginTabs, blockName ) + m_instancedProperties + IOUtils.InstancedPropertiesEndTabs;
+			}
+		}
+
+		public void AddToDotsProperties( WirePortDataType dataType, int nodeId, string value, int orderIndex, PrecisionType precision )
+		{
+			if( string.IsNullOrEmpty( value ) )
+				return;
+
+			string prop = string.Format( IOUtils.DotsInstancedPropertiesData, UIUtils.PrecisionWirePortToCgType( precision, dataType ), value );
+			string define = string.Format( IOUtils.DotsInstancedDefinesData, UIUtils.PrecisionWirePortToCgType( precision, dataType ), value );
+
+			if( !m_dotsPropertiesDict.ContainsKey( value ) )
+			{
+				PropertyDataCollector dataColl = new PropertyDataCollector( nodeId, prop, orderIndex );
+				dataColl.DataType = dataType;
+				m_dotsPropertiesDict.Add( value, dataColl );
+				m_dotsPropertiesList.Add( dataColl );
+
+				dataColl = new PropertyDataCollector( nodeId, define, orderIndex );
+				m_dotsDefinesList.Add( dataColl );
 			}
 		}
 
@@ -786,38 +869,47 @@ namespace AmplifyShaderEditor
 			}
 		}
 
+		public bool CheckIfSoftRegistered( string name )
+		{
+			return m_softRegisteredUniformsDict.ContainsKey( name );
+		}
 
 		public void SoftRegisterUniform( TemplateShaderPropertyData data )
 		{
-
 			bool excludeUniformKeyword = ( data.PropertyType == PropertyType.InstancedProperty ) || IsSRP;
 
-			string uniformName = UIUtils.GenerateUniformName( excludeUniformKeyword, data.PropertyDataType, data.PropertyName );
+			string uniformName = data.IsMacro?	data.PropertyName:
+												UIUtils.GenerateUniformName( excludeUniformKeyword, data.PropertyDataType, data.PropertyName );
 			if( !m_uniformsDict.ContainsKey( uniformName ) )
 			{
-				m_uniformsDict.Add( uniformName, new PropertyDataCollector( -1, uniformName ) );
+				PropertyDataCollector newEntry = new PropertyDataCollector( -1, uniformName );
+				m_uniformsDict.Add( uniformName, newEntry );
+				m_softRegisteredUniformsDict.Add( uniformName, newEntry );
 			}
 
 			string instancedUniform = GenerateInstanced( PrecisionType.Float, data.PropertyDataType, data.PropertyName );
 			if( !m_uniformsDict.ContainsKey( instancedUniform ) )
 			{
-				m_uniformsDict.Add( instancedUniform, new PropertyDataCollector( -1, instancedUniform ) );
+				PropertyDataCollector newEntry = new PropertyDataCollector( -1, instancedUniform );
+				m_uniformsDict.Add( instancedUniform, newEntry );
+				m_softRegisteredUniformsDict.Add( instancedUniform, newEntry );
 			}
 
 			instancedUniform = GenerateInstanced( PrecisionType.Half, data.PropertyDataType, data.PropertyName );
 			if( !m_uniformsDict.ContainsKey( instancedUniform ) )
 			{
-				m_uniformsDict.Add( instancedUniform, new PropertyDataCollector( -1, instancedUniform ) );
+				PropertyDataCollector newEntry = new PropertyDataCollector( -1, instancedUniform );
+				m_uniformsDict.Add( instancedUniform, newEntry );
+				m_softRegisteredUniformsDict.Add( instancedUniform, newEntry );
 			}
-
 		}
 
-		public void AddToUniforms( int nodeId, string dataType, string dataName, bool checkSRPBatch = false )
+		public void AddToUniforms( int nodeId, string dataType, string dataName, bool checkSRPBatch = false, bool excludeUniform = false )
 		{
 			if( string.IsNullOrEmpty( dataName ) || string.IsNullOrEmpty( dataType ) )
 				return;
 
-			string value = UIUtils.GenerateUniformName( IsSRP, dataType, dataName );
+			string value = UIUtils.GenerateUniformName( IsSRP || excludeUniform, dataType, dataName );
 			if( !m_uniformsDict.ContainsKey( value ) && !m_uniformsDict.ContainsKey( dataName ) )
 			{
 				m_uniformsDict.Add( value, new PropertyDataCollector( nodeId, value ) );
@@ -853,6 +945,138 @@ namespace AmplifyShaderEditor
 				}
 				m_dirtyUniforms = true;
 			}
+		}
+		public void AddFaceMacros()
+		{
+			for( int i = 0 ; i < Constants.FaceMacros.Length; i++ )
+			{
+				AddToDirectives( Constants.FaceMacros[ i ] );
+			}
+		}
+
+		public void AddASEMacros()
+		{
+			if( Using2DMacrosMask == MacrosMask.NONE && Using3DMacrosMask == MacrosMask.NONE && UsingCUBEMacrosMask == MacrosMask.NONE && Using2DArrayMacrosMask == MacrosMask.NONE )
+				return;
+
+			ParentGraph outsideGraph = UIUtils.CurrentWindow.OutsideGraph;
+#if !UNITY_2018_1_OR_NEWER
+			if( outsideGraph.IsStandardSurface && ( ( Using2DArrayMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO || ( Using2DArrayMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD ) )
+			{
+				return;
+			}
+#endif
+
+			//Debug.Log( UsingMacrosMask );
+			AddToDirectives( Constants.CustomASEStandarSamplingMacrosHelper[ 0 ], 1 );
+			
+			if( ( Using2DMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 0 ], 1 );
+			if( ( Using2DMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 1 ], 1 );
+			if( ( Using2DMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 2 ], 1 );
+			if( ( Using2DMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 3 ], 1 );
+
+			if( ( Using3DMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 4 ], 1 );
+			if( ( Using3DMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 5 ], 1 );
+			if( ( Using3DMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 6 ], 1 );
+			if( ( Using3DMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 7 ], 1 );
+
+			if( ( UsingCUBEMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 8 ], 1 );
+			if( ( UsingCUBEMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 9 ], 1 );
+			if( ( UsingCUBEMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 10 ], 1 );
+			if( ( UsingCUBEMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 11 ], 1 );
+
+#if !UNITY_2018_1_OR_NEWER
+			if( outsideGraph.IsStandardSurface )
+			{
+				//if( ( Using2DArrayMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+				//	AddToDirectives( Constants.CustomASEArraySamplingMacrosRecent[ 0 ], 1 );
+				//if( ( Using2DArrayMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+				//	AddToDirectives( Constants.CustomASEArraySamplingMacrosRecent[ 1 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+					AddToDirectives( Constants.CustomASEArraySamplingMacrosRecent[ 2 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+					AddToDirectives( Constants.CustomASEArraySamplingMacrosRecent[ 3 ], 1 );
+			} 
+			else
+#endif
+			{
+				if( ( Using2DArrayMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+					AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 12 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+					AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 13 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+					AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 14 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+					AddToDirectives( Constants.CustomASEStandarSamplingMacrosRecent[ 15 ], 1 );
+			}
+
+			AddToDirectives( Constants.CustomASEStandarSamplingMacrosHelper[ 1 ], 1 );
+
+			if( ( Using2DMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 0 ], 1 );
+			if( ( Using2DMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 1 ], 1 );
+			if( ( Using2DMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 2 ], 1 );
+			if( ( Using2DMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 3 ], 1 );
+
+			if( ( Using3DMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 4 ], 1 );
+			if( ( Using3DMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 5 ], 1 );
+			if( ( Using3DMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 6 ], 1 );
+			if( ( Using3DMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 7 ], 1 );
+
+			if( ( UsingCUBEMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 8 ], 1 );
+			if( ( UsingCUBEMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 9 ], 1 );
+			if( ( UsingCUBEMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 10 ], 1 );
+			if( ( UsingCUBEMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+				AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 11 ], 1 );
+
+#if !UNITY_2018_1_OR_NEWER
+			if( outsideGraph.IsStandardSurface )
+			{
+				//if( ( Using2DArrayMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+				//	AddToDirectives( Constants.CustomASEArraySamplingMacrosOlder[ 0 ], 1 );
+				//if( ( Using2DArrayMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+				//	AddToDirectives( Constants.CustomASEArraySamplingMacrosOlder[ 1 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+					AddToDirectives( Constants.CustomASEArraySamplingMacrosOlder[ 2 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+					AddToDirectives( Constants.CustomASEArraySamplingMacrosOlder[ 3 ], 1 );
+			}
+			else
+#endif
+			{
+				if( ( Using2DArrayMacrosMask & MacrosMask.AUTO ) == MacrosMask.AUTO )
+					AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 12 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.LOD ) == MacrosMask.LOD )
+					AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 13 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.BIAS ) == MacrosMask.BIAS )
+					AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 14 ], 1 );
+				if( ( Using2DArrayMacrosMask & MacrosMask.GRAD ) == MacrosMask.GRAD )
+					AddToDirectives( Constants.CustomASEStandarSamplingMacrosOlder[ 15 ], 1 );
+			}
+
+			AddToDirectives( Constants.CustomASEStandarSamplingMacrosHelper[ 2 ], 1 );
 		}
 
 		public void AddToDirectives( string value, int orderIndex = -1 , AdditionalLineType type = AdditionalLineType.Custom )
@@ -940,6 +1164,11 @@ namespace AmplifyShaderEditor
 		//	}
 		//}
 
+		public bool ContainsPragma( string value )
+		{
+			return m_pragmasDict.ContainsKey( value );
+		}
+
 		public void AddToPragmas( int nodeId, string value )
 		{
 			if( string.IsNullOrEmpty( value ) )
@@ -953,7 +1182,13 @@ namespace AmplifyShaderEditor
 
 			if( !m_pragmasDict.ContainsKey( value ) )
 			{
-				m_pragmasDict.Add( value, new PropertyDataCollector( nodeId, "#pragma " + value ) );
+				string finalValue = "#pragma " + value;
+				PropertyDataCollector dataCollector = new PropertyDataCollector( nodeId , finalValue );
+
+				//Adding both versions to dict so check can take both into account
+				m_pragmasDict.Add( value, dataCollector );
+				m_pragmasDict.Add( finalValue , dataCollector );
+
 				m_pragmasList.Add( m_pragmasDict[ value ] );
 				m_pragmas += "\t\t#pragma " + value + "\n";
 				m_dirtyPragmas = true;
@@ -962,6 +1197,11 @@ namespace AmplifyShaderEditor
 			{
 				if( m_showDebugMessages ) UIUtils.ShowMessage( "AddToPragmas:Attempting to add duplicate " + value, MessageSeverity.Warning );
 			}
+		}
+
+		public bool ContainsDefine( string value )
+		{
+			return m_definesDict.ContainsKey( value );
 		}
 
 		public void AddToDefines( int nodeId, string value, bool define = true )
@@ -978,7 +1218,12 @@ namespace AmplifyShaderEditor
 			if( !m_definesDict.ContainsKey( value ) )
 			{
 				string defineValue = ( define ? "#define " : "#undef " ) + value;
-				m_definesDict.Add( value, new PropertyDataCollector( nodeId, defineValue ) );
+				PropertyDataCollector dataCollector = new PropertyDataCollector( nodeId , defineValue );
+
+				//Adding both versions to dict so check can take both into account
+				m_definesDict.Add( value, dataCollector );
+				m_definesDict.Add( defineValue , dataCollector );
+
 				m_definesList.Add( m_definesDict[ value ] );
 				m_defines += "\t\t" + defineValue + "\n";
 				m_dirtyDefines = true;
@@ -1020,7 +1265,7 @@ namespace AmplifyShaderEditor
 				return false;
 
 			string value = UIUtils.PrecisionWirePortToCgType( precisionType, type ) + " " + varName + " = " + varValue + ";";
-			return AddToLocalVariables( nodeId, value );
+			return AddToFragmentLocalVariables( nodeId, value );
 		}
 
 		public bool AddToLocalVariables( MasterNodePortCategory category, int nodeId, string value, bool ignoreDuplicates = false )
@@ -1038,7 +1283,7 @@ namespace AmplifyShaderEditor
 				case MasterNodePortCategory.Fragment:
 				case MasterNodePortCategory.Debug:
 				{
-					return AddToLocalVariables( nodeId, value, ignoreDuplicates );
+					return AddToFragmentLocalVariables( nodeId, value, ignoreDuplicates );
 				}
 			}
 
@@ -1054,13 +1299,69 @@ namespace AmplifyShaderEditor
 			return AddLocalVariable( nodeId, value );
 		}
 
+		private bool UsedLocalVariable( string value )
+		{
+			switch( m_portCategory )
+			{
+				case MasterNodePortCategory.Vertex:
+				case MasterNodePortCategory.Tessellation:
+				{
+					if( m_vertexLocalVariablesDict.ContainsKey( value ) )
+					{
+						return true;
+					}
+				}
+				break;
+				case MasterNodePortCategory.Fragment:
+				case MasterNodePortCategory.Debug:
+				{
+					if( m_usingCustomOutput )
+					{
+						if( m_customOutputDict.ContainsKey( value ) )
+						{
+							return true;
+						}
+					}
+					else
+					{
+						if( m_localVariablesDict.ContainsKey( value ) )
+						{
+							return true;
+						}
+					}
+				}
+				break;
+			}
+			return false;
+		}
+
+		private bool ValidadeLocalVariable( PrecisionType precisionType, WirePortDataType type, string varName, string varValue, ref string result )
+		{
+			Array enumValues = Enum.GetValues( typeof( PrecisionType ) );
+			foreach( PrecisionType currPrecision in enumValues)
+			{
+				string value = UIUtils.PrecisionWirePortToTypeValue( currPrecision, type, varName ) + " = " + varValue + ";";
+				if( UsedLocalVariable( value ) )
+					return false;
+
+				if( precisionType == currPrecision )
+					result = value;
+			}
+
+			return true;
+		}
+
 		public bool AddLocalVariable( int nodeId, PrecisionType precisionType, WirePortDataType type, string varName, string varValue )
 		{
 			if( string.IsNullOrEmpty( varName ) || string.IsNullOrEmpty( varValue ) )
 				return false;
 
-			string value = UIUtils.PrecisionWirePortToCgType( precisionType, type ) + " " + varName + " = " + varValue + ";";
-			return AddLocalVariable( nodeId, value );
+			//string value = UIUtils.PrecisionWirePortToTypeValue( precisionType, type, varName ) + " = " + varValue + ";";
+			string value = string.Empty;
+			if( ValidadeLocalVariable(  precisionType, type, varName, varValue, ref value))
+				return AddLocalVariable( nodeId, value );
+
+			return false;
 		}
 
 		public bool AddLocalVariable( int nodeId, string name, string value, bool ignoreDuplicates = false , bool addSemiColon = false )
@@ -1084,7 +1385,7 @@ namespace AmplifyShaderEditor
 				case MasterNodePortCategory.Fragment:
 				case MasterNodePortCategory.Debug:
 				{
-					return AddToLocalVariables( nodeId, value, ignoreDuplicates );
+					return AddToFragmentLocalVariables( nodeId, value, ignoreDuplicates );
 				}
 			}
 
@@ -1132,7 +1433,7 @@ namespace AmplifyShaderEditor
 			}
 			else
 			{
-				AddToLocalVariables( 0, IOUtils.CreateCodeComments( forceForwardSlash, comments ) );
+				AddToFragmentLocalVariables( 0, IOUtils.CreateCodeComments( forceForwardSlash, comments ) );
 			}
 		}
 
@@ -1161,7 +1462,7 @@ namespace AmplifyShaderEditor
 			return false;
 		}
 
-		public bool AddToLocalVariables( int nodeId, string value, bool ignoreDuplicates = false )
+		public bool AddToFragmentLocalVariables( int nodeId, string value, bool ignoreDuplicates = false )
 		{
 			if( string.IsNullOrEmpty( value ) )
 				return false;
@@ -1506,8 +1807,14 @@ namespace AmplifyShaderEditor
 			m_customAppDataItems += "\t\t\t" + value + "\n";
 			m_dirtyAppData = true;
 		}
-		public string CustomAppDataName { get { return m_dirtyAppData ? Constants.CustomAppDataFullName : Constants.AppDataFullName; } }
 
+		public void ForceCustomAppDataUsage()
+		{
+			m_dirtyAppData = true;
+		}
+
+		//public string CustomAppDataName { get { return m_dirtyAppData ? Constants.CustomAppDataFullName : Constants.AppDataFullName; } }
+		public string SurfaceVertexStructure { get { return ( m_dirtyAppData ? Constants.CustomAppDataFullName : Constants.AppDataFullName ); } }
 		public string CustomAppData
 		{
 			get
@@ -1537,6 +1844,12 @@ namespace AmplifyShaderEditor
 
 			m_instancedPropertiesList.Clear();
 			m_instancedPropertiesList = null;
+
+			m_dotsPropertiesList.Clear();
+			m_dotsPropertiesList = null;
+
+			m_dotsDefinesList.Clear();
+			m_dotsDefinesList = null;
 
 			m_uniformsList.Clear();
 			m_uniformsList = null;
@@ -1604,11 +1917,17 @@ namespace AmplifyShaderEditor
 			m_propertiesDict.Clear();
 			m_propertiesDict = null;
 
+			m_dotsPropertiesDict.Clear();
+			m_dotsPropertiesDict = null;
+
 			m_instancedPropertiesDict.Clear();
 			m_instancedPropertiesDict = null;
 
 			m_uniformsDict.Clear();
 			m_uniformsDict = null;
+
+			m_softRegisteredUniformsDict.Clear();
+			m_softRegisteredUniformsDict = null;
 
 			m_includesDict.Clear();
 			m_includesDict = null;
@@ -1894,19 +2213,52 @@ namespace AmplifyShaderEditor
 			set { m_usingLightAttenuation = value; }
 		}
 
+		public bool UsingTextureArrays
+		{
+			get { return m_usingTextureArrays; }
+			set { m_usingTextureArrays = value; }
+		}
+
+		public bool UsingExtraStandardMacros
+		{
+			get { return m_usingExtraStandardMacros; }
+			set { m_usingExtraStandardMacros = value; }
+		}
+
+		public MacrosMask Using2DMacrosMask
+		{
+			get { return m_using2DMacrosMask; }
+			set { m_using2DMacrosMask = value; }
+		}
+
+		public MacrosMask Using3DMacrosMask
+		{
+			get { return m_using3DMacrosMask; }
+			set { m_using3DMacrosMask = value; }
+		}
+
+		public MacrosMask UsingCUBEMacrosMask
+		{
+			get { return m_usingCUBEMacrosMask; }
+			set { m_usingCUBEMacrosMask = value; }
+		}
+
+		public MacrosMask Using2DArrayMacrosMask
+		{
+			get { return m_using2DArrayMacrosMask; }
+			set { m_using2DArrayMacrosMask = value; }
+		}
+
+		public bool UsingExtra3DSRPMacros
+		{
+			get { return m_usingExtra3DSRPMacros; }
+			set { m_usingExtra3DSRPMacros = value; }
+		}
+
 		public bool UsingArrayDerivatives
 		{
 			get { return m_usingArrayDerivatives; }
-			set
-			{
-				if( value )
-				{
-					MasterNodeDataCollector instance = this;
-					GeneratorUtils.AddCustomArraySamplingMacros( ref instance );
-				}
-
-				m_usingArrayDerivatives = value;
-			}
+			set { m_usingArrayDerivatives = value; }
 		}
 
 		public bool SafeNormalizeLightDir
@@ -1935,10 +2287,19 @@ namespace AmplifyShaderEditor
 			}
 		}
 
+		public bool SurfaceCustomShadowCaster
+		{
+			get { return m_surfaceCustomShadowCaster; }
+			set { m_surfaceCustomShadowCaster = value; }
+		}
+
+		public bool CustomOutline { get { return UsingCustomOutlineColor || UsingCustomOutlineWidth || UsingCustomOutlineAlpha; } }
 		public List<PropertyDataCollector> InputList { get { return m_inputList; } }
 		public List<PropertyDataCollector> CustomInputList { get { return m_customInputList; } }
 		public List<PropertyDataCollector> PropertiesList { get { return m_propertiesList; } }
 		public List<PropertyDataCollector> InstancedPropertiesList { get { return m_instancedPropertiesList; } }
+		public List<PropertyDataCollector> DotsPropertiesList { get { return m_dotsPropertiesList; } }
+		public List<PropertyDataCollector> DotsDefinesList { get { return m_dotsDefinesList; } }
 		public List<PropertyDataCollector> UniformsList { get { return m_uniformsList; } }
 		public List<PropertyDataCollector> MiscList { get { return m_additionalDirectivesList; } }
 		public List<PropertyDataCollector> BeforeNativeDirectivesList { get { return m_additionalDirectivesList.FindAll( obj => obj.OrderIndex < 0 ); } }
@@ -1984,5 +2345,7 @@ namespace AmplifyShaderEditor
 				return TemplateSRPType.BuiltIn;
 			}
 		}
+
+		public Dictionary<string, PropertyDataCollector> PropertiesDict { get { return m_propertiesDict; } }
 	}
 }

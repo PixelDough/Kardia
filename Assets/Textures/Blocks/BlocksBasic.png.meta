@@ -141,7 +141,7 @@ TextureImporter:
       213: 2434024917885060844
     second: texture_worm_squish
   externalObjects: {}
-  serializedVersion: 10
+  serializedVersion: 11
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -161,6 +161,8 @@ TextureImporter:
   isReadable: 1
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -170,11 +172,11 @@ TextureImporter:
   textureSettings:
     serializedVersion: 2
     filterMode: 0
-    aniso: -1
-    mipBias: -100
+    aniso: 1
+    mipBias: 0
     wrapU: 1
     wrapV: 1
-    wrapW: -1
+    wrapW: 0
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
@@ -192,12 +194,28 @@ TextureImporter:
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 1
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
+    maxTextureSize: 256
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 2
+    compressionQuality: 100
+    crunchedCompression: 1
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
     maxTextureSize: 256
     resizeAlgorithm: 0
     textureFormat: -1
@@ -209,7 +227,7 @@ TextureImporter:
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
-    buildTarget: Standalone
+    buildTarget: Server
     maxTextureSize: 256
     resizeAlgorithm: 0
     textureFormat: -1
@@ -1094,6 +1112,48 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
+    nameFileIdTable:
+      BlocksBasic_22: 8442085685846952864
+      BlocksBasic_20: 3530369182430365977
+      BlocksBasic_16: 8887327274122193890
+      BlocksBasic_33: -1239276729702578557
+      BlocksBasic_32: -962999928075542572
+      BlocksBasic_10: 3376238651490693033
+      BlocksBasic_24: 3984020365136769737
+      BlocksBasic_25: -7091474775523399217
+      BlocksBasic_21: -7436072354229515435
+      BlocksBasic_35: -6853326700852658209
+      BlocksBasic_27: -7728224020416167488
+      BlocksBasic_11: -419404853668576405
+      BlocksBasic_29: -1032313257125114724
+      BlocksBasic_0: -7840074429431832993
+      BlocksBasic_2: 1784104313756776463
+      BlocksBasic_5: 8314276924125523624
+      BlocksBasic_23: 3036923394425876512
+      BlocksBasic_13: 4271011987453948750
+      BlocksBasic_4: 848547321985801646
+      BlocksBasic_7: -6843745651473779026
+      BlocksBasic_19: 8591064183537740587
+      BlocksBasic_31: -4850142154322020608
+      BlocksBasic_8: 2598164636216062768
+      texture_worm_blobs: 6279604770963430837
+      texture_worm_cube: 4541613640184359397
+      BlocksBasic_17: 3713039710029934346
+      texture_worm_soft: -5353695478818814290
+      BlocksBasic_6: -2319620163471104065
+      texture_worm_hole: -1105812112389414458
+      BlocksBasic_12: 2541278259166485901
+      BlocksBasic_26: -8949152895353029622
+      BlocksBasic_30: -6496604115938629869
+      BlocksBasic_28: -3018300485548308903
+      BlocksBasic_14: 7010138011366478569
+      BlocksBasic_1: -5015574663873436422
+      texture_worm_squish: 2434024917885060844
+      BlocksBasic_18: 3981125076090490919
+      BlocksBasic_9: 3879616235255840192
+      BlocksBasic_15: 5011277631304545100
+      BlocksBasic_3: 3276134778977178985
+      BlocksBasic_34: -914757451064957285
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

@@ -40,10 +40,10 @@ namespace AmplifyShaderEditor
 		private readonly string OutlineBodyStructDefault = "\thalf filler;";
 		private readonly string OutlineBodyStructEnd = "};";
 
-		private readonly string OutlineDefaultUniformColor = "uniform half4 _ASEOutlineColor;";
-		private readonly string OutlineDefaultUniformWidth = "uniform half _ASEOutlineWidth;";
+		private readonly string OutlineDefaultUniformColor = "half4 _ASEOutlineColor;";
+		private readonly string OutlineDefaultUniformWidth = "half _ASEOutlineWidth;";
 		private readonly string OutlineDefaultUniformColorInstanced = "UNITY_DEFINE_INSTANCED_PROP( half4, _ASEOutlineColor )";
-		private readonly string OutlineDefaultUniformWidthInstanced = "UNITY_DEFINE_INSTANCED_PROP(half, _ASEOutlineWidth)";
+		private readonly string OutlineDefaultUniformWidthInstanced = "UNITY_DEFINE_INSTANCED_PROP( half, _ASEOutlineWidth )";
 
 		private readonly string OutlineDefaultVertexHeader = "void outlineVertexDataFunc( inout appdata_full v, out Input o )\n\t\t{";
 		private readonly string OutlineTessVertexHeader = "void outlineVertexDataFunc( inout appdata_full v )\n\t\t{";
@@ -115,6 +115,8 @@ namespace AmplifyShaderEditor
 
 		private const string BillboardInstructionFormat = "\t{0};";
 
+		private readonly char[] m_colorMaskChar = { 'R' , 'G' , 'B' , 'A' };
+
 		[SerializeField]
 		private Color m_outlineColor;
 
@@ -130,6 +132,7 @@ namespace AmplifyShaderEditor
 		[SerializeField]
 		private bool m_noFog = true;
 
+		private bool[] m_colorMask = { true , true , true , true };
 		private CullMode m_cullMode = CullMode.Front;
 		private int m_zTestMode = 0;
 		private int m_zWriteMode = 0;
@@ -145,6 +148,7 @@ namespace AmplifyShaderEditor
 		private string m_includes = string.Empty;
 		private string m_pragmas = string.Empty;
 		private string m_defines = string.Empty;
+		private string m_standardAdditionalDirectives = string.Empty;
 		private string m_vertexData = string.Empty;
 		private string m_grabPasses = string.Empty;
 		private Dictionary<string, string> m_localFunctions;
@@ -287,7 +291,7 @@ namespace AmplifyShaderEditor
 			}
 
 		}
-		public string[] OutlineFunctionBody( ref MasterNodeDataCollector dataCollector, bool instanced, bool isShadowCaster, string shaderName, string[] billboardInfo, ref TessellationOpHelper tessOpHelper, string target )
+		public string[] OutlineFunctionBody( ref MasterNodeDataCollector dataCollector, bool instanced, bool isShadowCaster, string shaderName, string[] billboardInfo, ref TessellationOpHelper tessOpHelper, string target, PrecisionType precision )
 		{
 			List<string> body = new List<string>();
 			body.Add( ModeTags[ dataCollector.CustomOutlineSelectedAlpha ] );
@@ -300,6 +304,26 @@ namespace AmplifyShaderEditor
 				body.Add( "ZTest " + ZBufferOpHelper.ZTestModeValues[ m_zTestMode ] );
 
 			body.Add( "Cull " + m_cullMode );
+			
+			//Color Mask
+			{
+				int count = 0;
+				string colorMask = string.Empty;
+				for( int i = 0 ; i < m_colorMask.Length ; i++ )
+				{
+					if( m_colorMask[ i ] )
+					{
+						count++;
+						colorMask += m_colorMaskChar[ i ];
+					}
+				}
+
+				if( count != m_colorMask.Length )
+				{
+					body.Add( "ColorMask " + ( ( count == 0 ) ? "0" : colorMask ) );
+				}
+			}
+
 			body.Add( "CGPROGRAM" );
 			if( tessOpHelper.EnableTesselation )
 			{
@@ -310,7 +334,6 @@ namespace AmplifyShaderEditor
 			{
 				body.Add( "#pragma target 3.0" );
 			}
-
 			bool customOutline = dataCollector.UsingCustomOutlineColor || dataCollector.UsingCustomOutlineWidth || dataCollector.UsingCustomOutlineAlpha;
 			int outlineMode = customOutline ? m_offsetMode : ( m_mode == OutlineMode.VertexOffset ? 0 : 1 );
 			string extraOptions = ( customOutline ? m_customNoFog : m_noFog ) ? "nofog " : string.Empty;
@@ -331,7 +354,7 @@ namespace AmplifyShaderEditor
 				AddMultibodyString( m_includes, body );
 				AddMultibodyString( m_pragmas, body );
 			}
-
+			AddMultibodyString( m_standardAdditionalDirectives, body );
 			//if( instanced )
 			//{
 			//	body.Add( OutlineInstancedHeader );
@@ -344,7 +367,7 @@ namespace AmplifyShaderEditor
 
 					for( int i = 0; i < InputList.Count; i++ )
 					{
-						dataCollector.AddToInput( InputList[ i ].NodeId, InputList[ i ].PropertyName, true );
+						dataCollector.AddToInput( InputList[ i ].NodeId, InputList[ i ].PropertyName, !InputList[ i ].IsDirective );
 					}
 				}
 				else
@@ -391,6 +414,9 @@ namespace AmplifyShaderEditor
 				//{
 				//	body.Add( OutlineBodyInstancedEnd[ i ] );
 				//}
+				
+				//Instanced block name must differ from used on main shader so it won't throw a duplicate name error
+				shaderName = shaderName+ "Outline";
 				bool openCBuffer = true;
 				if( customOutline )
 				{
@@ -422,10 +448,10 @@ namespace AmplifyShaderEditor
 					body.Add( string.Format( IOUtils.InstancedPropertiesBegin, shaderName ) );
 
 				if( !dataCollector.UsingCustomOutlineColor )
-					body.Add( OutlineDefaultUniformColorInstanced );
+					body.Add( precision == PrecisionType.Float ? OutlineDefaultUniformColorInstanced.Replace( "half", "float" ) : OutlineDefaultUniformColorInstanced );
 
 				if( !dataCollector.UsingCustomOutlineWidth )
-					body.Add( OutlineDefaultUniformWidthInstanced );
+					body.Add( precision == PrecisionType.Float ? OutlineDefaultUniformWidthInstanced.Replace( "half", "float" ) : OutlineDefaultUniformWidthInstanced );
 
 				body.Add( IOUtils.InstancedPropertiesEnd );
 
@@ -436,7 +462,7 @@ namespace AmplifyShaderEditor
 				if( tessOpHelper.EnableTesselation && !isShadowCaster )
 				{
 					body.Add( tessOpHelper.Uniforms().TrimStart( '\t' ) );
-					body.Add( tessOpHelper.GetCurrentTessellationFunction.Trim( '\t', '\n' ) + "\n" );
+					body.Add( tessOpHelper.GetCurrentTessellationFunction( ref dataCollector ).Trim( '\t', '\n' ) + "\n" );
 				}
 
 				if( tessOpHelper.EnableTesselation )
@@ -515,10 +541,10 @@ namespace AmplifyShaderEditor
 				}
 
 				if( !dataCollector.UsingCustomOutlineColor )
-					body.Add( OutlineDefaultUniformColor );
+					body.Add( precision == PrecisionType.Float ? OutlineDefaultUniformColor.Replace( "half", "float" ) : OutlineDefaultUniformColor );
 
 				if( !dataCollector.UsingCustomOutlineWidth )
-					body.Add( OutlineDefaultUniformWidth );
+					body.Add( precision == PrecisionType.Float ? OutlineDefaultUniformWidth.Replace( "half", "float" ) : OutlineDefaultUniformWidth );
 
 				//Functions
 				if( customOutline && !isShadowCaster )
@@ -527,7 +553,7 @@ namespace AmplifyShaderEditor
 				if( tessOpHelper.EnableTesselation && !isShadowCaster )
 				{
 					body.Add( tessOpHelper.Uniforms().TrimStart( '\t' ) );
-					body.Add( tessOpHelper.GetCurrentTessellationFunction.Trim( '\t', '\n' ) + "\n" );
+					body.Add( tessOpHelper.GetCurrentTessellationFunction( ref dataCollector ).Trim( '\t', '\n' ) + "\n" );
 				}
 
 				if( tessOpHelper.EnableTesselation )
@@ -605,6 +631,33 @@ namespace AmplifyShaderEditor
 		public int ZWriteMode { get { return m_zWriteMode; } set { m_zWriteMode = value; } }
 		public int ZTestMode { get { return m_zTestMode; } set { m_zTestMode = value; } }
 		public CullMode OutlineCullMode { get { return m_cullMode; } set { m_cullMode = value; } }
+		public bool[] ColorMask
+		{
+			get { return m_colorMask; }
+			set
+			{
+				if( value.Length == m_colorMask.Length )
+				{
+					for( int i = 0 ; i < m_colorMask.Length ; i++ )
+					{
+						m_colorMask[i] = value[i];
+					}
+				}
+			}
+		}
+
+		public bool ActiveColorMask
+		{
+			get
+			{
+				for( int i = 0 ; i < m_colorMask.Length ; i++ )
+				{
+					if( !m_colorMask[ i ] )
+						return true;
+				}
+				return false;
+			}
+		}
 		public string Inputs { get { return m_inputs; } set { m_inputs = value; } }
 		public string Uniforms { get { return m_uniforms; } set { m_uniforms = value; } }
 		public string InstancedProperties { get { return m_instancedProperties; } set { m_instancedProperties = value; } }
@@ -613,6 +666,7 @@ namespace AmplifyShaderEditor
 		public string Includes { get { return m_includes; } set { m_includes = value; } }
 		public string Pragmas { get { return m_pragmas; } set { m_pragmas = value; } }
 		public string Defines { get { return m_defines; } set { m_defines = value; } }
+		public string StandardAdditionalDirectives { get { return m_standardAdditionalDirectives; } set { m_standardAdditionalDirectives = value; } }
 		public string VertexData { get { return m_vertexData; } set { m_vertexData = value; } }
 		public string GrabPasses { get { return m_grabPasses; } set { m_grabPasses = value; } }
 		public List<PropertyDataCollector> InputList { get { return m_inputList; } set { m_inputList = value; } }

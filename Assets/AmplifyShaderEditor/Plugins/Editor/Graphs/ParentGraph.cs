@@ -24,6 +24,7 @@ namespace AmplifyShaderEditor
 			LOD5
 		}
 
+		[SerializeField]
 		private bool m_samplingThroughMacros = false;
 
 		private NodeLOD m_lodLevel = NodeLOD.LOD0;
@@ -266,6 +267,25 @@ namespace AmplifyShaderEditor
 			for( int i = 0; i < MaxBezierReferences; i++ )
 			{
 				m_bezierReferences.Add( new WireBezierReference() );
+			}
+		}
+
+		public void ActivatePreviews( bool value )
+		{
+			int count = m_nodes.Count;
+			if( value )
+			{
+				for( int i = 0 ; i < count ; i++ )
+				{
+					m_nodes[ i ].PreviewIsDirty = true;
+				}
+			}
+			else
+			{
+				//for( int i = 0 ; i < count ; i++ )
+				//{
+				//	m_nodes[ i ].DisablePreview();
+				//}
 			}
 		}
 
@@ -1008,6 +1028,7 @@ namespace AmplifyShaderEditor
 				case WirePortDataType.SAMPLER2D:
 				case WirePortDataType.SAMPLER3D:
 				case WirePortDataType.SAMPLERCUBE:
+				case WirePortDataType.SAMPLER2DARRAY:
 				propertyNode = CreateInstance<SamplerNode>();
 				break;
 				default: return;
@@ -1295,6 +1316,18 @@ namespace AmplifyShaderEditor
 				{
 					RefreshLinkedMasterNodes( true );
 					OnRefreshLinkedPortsComplete();
+					//If clipboard has cached nodes then a master node replacement will take place
+					//We need to re-cache master nodes to ensure applied options are correctly cached
+					//As first cache happens before that
+					if( m_parentWindow.ClipboardInstance.HasCachedMasterNodes )
+					{
+						m_parentWindow.ClipboardInstance.AddMultiPassNodesToClipboard( MultiPassMasterNodes.NodesList,true,-1 );
+						for( int i = 0; i < m_lodMultiPassMasterNodes.Count; i++ )
+						{
+							if( m_lodMultiPassMasterNodes[ i ].Count > 0 )
+								m_parentWindow.ClipboardInstance.AddMultiPassNodesToClipboard( m_lodMultiPassMasterNodes[ i ].NodesList, false, i );
+						}
+					}
 					//RepositionTemplateNodes( CurrentMasterNode );
 				}
 			}
@@ -2686,7 +2719,13 @@ namespace AmplifyShaderEditor
 		public void UpdateShaderOnMasterNode( Shader newShader )
 		{
 			MasterNode mainMasterNode = ( GetNode( m_masterNodeId ) as MasterNode );
+			if( mainMasterNode == null )
+			{
+				Debug.LogError( "No Master Node was detected. Aborting update!" );
+				return;
+			}
 			mainMasterNode.UpdateFromShader( newShader );
+
 			if( HasLODs )
 			{
 				int passIdx = ( (TemplateMultiPassMasterNode)mainMasterNode ).PassIdx;
@@ -2694,7 +2733,15 @@ namespace AmplifyShaderEditor
 				{
 					if( m_lodMultiPassMasterNodes.Count != 0 && m_lodMultiPassMasterNodes[ i ].NodesList.Count > 0 )
 					{
-						m_lodMultiPassMasterNodes[ i ].NodesList[ passIdx ].UpdateFromShader( newShader );
+						if( m_lodMultiPassMasterNodes[ i ].NodesList[ passIdx ] != null )
+						{
+							m_lodMultiPassMasterNodes[ i ].NodesList[ passIdx ].UpdateFromShader( newShader );
+						}
+						else
+						{
+							Debug.LogError( "Null master node detected. Aborting update!" );
+							return;
+						}
 					}
 					else break;
 				}
@@ -2977,14 +3024,45 @@ namespace AmplifyShaderEditor
 			return newNode;
 		}
 
+		public TemplateMultiPassMasterNode CreateMultipassMasterNode( int lodId, bool registerUndo, int nodeId = -1, bool addLast = true )
+		{
+			TemplateMultiPassMasterNode newNode = ScriptableObject.CreateInstance<TemplateMultiPassMasterNode>();
+			if( newNode )
+			{
+				newNode.LODIndex = lodId;
+				newNode.ContainerGraph = this;
+				if( newNode.IsStubNode )
+				{
+					TemplateMultiPassMasterNode stubNode = newNode.ExecuteStubCode() as TemplateMultiPassMasterNode;
+					ScriptableObject.DestroyImmediate( newNode, true );
+					newNode = stubNode;
+				}
+				else
+				{
+					newNode.UniqueId = nodeId;
+					AddNode( newNode, nodeId < 0, addLast, registerUndo );
+				}
+			}
+			return newNode;
+		}
+
 		public ParentNode CreateNode( System.Type type, bool registerUndo, int nodeId = -1, bool addLast = true )
 		{
 			ParentNode newNode = ScriptableObject.CreateInstance( type ) as ParentNode;
 			if( newNode )
 			{
 				newNode.ContainerGraph = this;
-				newNode.UniqueId = nodeId;
-				AddNode( newNode, nodeId < 0, addLast, registerUndo );
+				if( newNode.IsStubNode )
+				{
+					ParentNode stubNode = newNode.ExecuteStubCode();
+					ScriptableObject.DestroyImmediate( newNode, true );
+					newNode = stubNode;
+				}
+				else
+				{
+					newNode.UniqueId = nodeId;
+					AddNode( newNode, nodeId < 0, addLast, registerUndo );
+				}
 			}
 			return newNode;
 		}
@@ -3026,16 +3104,17 @@ namespace AmplifyShaderEditor
 		}
 
 
-		public void CrossCheckTemplateNodes( TemplateDataParent templateData )
+		public void CrossCheckTemplateNodes( TemplateDataParent templateData , List<TemplateMultiPassMasterNode> mpNodesList , int lodId )
 		{
 			/*Paulo*/
 			DeSelectAll();
 			TemplateMultiPassMasterNode newMasterNode = null;
 			Dictionary<string, TemplateReplaceHelper> nodesDict = new Dictionary<string, TemplateReplaceHelper>();
-			int mpNodeCount = m_multiPassMasterNodes.NodesList.Count;
+			int mpNodeCount = mpNodesList.Count;
 			for( int i = 0; i < mpNodeCount; i++ )
 			{
-				nodesDict.Add( m_multiPassMasterNodes.NodesList[ i ].OriginalPassName, new TemplateReplaceHelper( m_multiPassMasterNodes.NodesList[ i ] ) );
+				string masterNodeId = mpNodesList[ i ].InvalidNode ? mpNodesList[ i ].OriginalPassName + "ASEInvalidMasterNode" + i : mpNodesList[ i ].OriginalPassName;
+				nodesDict.Add( masterNodeId, new TemplateReplaceHelper( mpNodesList[ i ] ) );
 			}
 
 			TemplateMultiPassMasterNode currMasterNode = GetNode( m_masterNodeId ) as TemplateMultiPassMasterNode;
@@ -3043,6 +3122,7 @@ namespace AmplifyShaderEditor
 			TemplateMultiPass multipassData = templateData as TemplateMultiPass;
 			m_currentSRPType = multipassData.SubShaders[ 0 ].Modules.SRPType;
 
+			bool sortTemplatesNodes = false;
 			Vector2 currentPosition = currMasterNode.Vec2Position;
 			for( int subShaderIdx = 0; subShaderIdx < multipassData.SubShaders.Count; subShaderIdx++ )
 			{
@@ -3067,7 +3147,8 @@ namespace AmplifyShaderEditor
 					}
 					else
 					{
-						TemplateMultiPassMasterNode masterNode = CreateNode( typeof( TemplateMultiPassMasterNode ), false ) as TemplateMultiPassMasterNode;
+						sortTemplatesNodes = true;
+						TemplateMultiPassMasterNode masterNode = CreateMultipassMasterNode( lodId, false );
 						if( multipassData.SubShaders[ subShaderIdx ].Passes[ passIdx ].IsMainPass )
 						{
 							newMasterNode = masterNode;
@@ -3089,10 +3170,18 @@ namespace AmplifyShaderEditor
 
 			if( newMasterNode != null )
 			{
-				m_masterNodeId = newMasterNode.UniqueId;
+				if( lodId == -1 )
+				{
+					m_masterNodeId = newMasterNode.UniqueId;
+				}
 				newMasterNode.OnMaterialUpdatedEvent += OnMaterialUpdatedEvent;
 				newMasterNode.OnShaderUpdatedEvent += OnShaderUpdatedEvent;
 				newMasterNode.IsMainOutputNode = true;
+			}
+
+			if( sortTemplatesNodes )
+			{
+				mpNodesList.Sort( ( x, y ) => ( x.PassIdx.CompareTo( y.PassIdx ) ) );
 			}
 		}
 
@@ -3330,10 +3419,11 @@ namespace AmplifyShaderEditor
 				nodesToDelete.Clear();
 			}
 
+			m_masterNodeId = newMasterNode.UniqueId;
+
 			if( refreshLinkedMasterNodes )
 				RefreshLinkedMasterNodes( true );
 
-			m_masterNodeId = newMasterNode.UniqueId;
 			newMasterNode.OnMaterialUpdatedEvent += OnMaterialUpdatedEvent;
 			newMasterNode.OnShaderUpdatedEvent += OnShaderUpdatedEvent;
 			newMasterNode.IsMainOutputNode = true;
@@ -3948,7 +4038,11 @@ namespace AmplifyShaderEditor
 		public bool IsHDRP { get { return m_currentSRPType == TemplateSRPType.HD; } }
 		public bool IsLWRP { get { return m_currentSRPType == TemplateSRPType.Lightweight; } }
 		public bool IsStandardSurface { get { return GetNode( m_masterNodeId ) is StandardSurfaceOutputNode; } }
-		public bool SamplingThroughMacros { get { return m_samplingThroughMacros && IsSRP; } }
+		
+		public bool SamplingMacros { 
+			get { return m_samplingThroughMacros; }
+			set { m_samplingThroughMacros = value; } 
+		}
 		public bool HasLODs { get { return m_lodMultiPassMasterNodes[ 0 ].Count > 0; } }
 		//public bool HasLodMultiPassNodes
 		//{

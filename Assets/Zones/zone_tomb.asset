@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: zone_tomb
   m_EditorClassIdentifier: 
   blockMaterial: {fileID: 2100000, guid: 10c4710976e0f224aa439e8bb72cc051, type: 2}
-  fogColor: {r: 0.65882355, g: 0.43137255, b: 0.3647059, a: 1}
+  fogColor: {r: 0.6784314, g: 0.5529412, b: 0.35686275, a: 1}

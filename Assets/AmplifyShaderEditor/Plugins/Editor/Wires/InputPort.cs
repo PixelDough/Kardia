@@ -411,22 +411,8 @@ namespace AmplifyShaderEditor
 		private string SamplerWrappedData( ref MasterNodeDataCollector dataCollector )
 		{
 			m_internalData = "_Sampler" + PortId + UIUtils.GetNode( m_nodeId ).OutputId;
-			ParentGraph outsideGraph = UIUtils.CurrentWindow.OutsideGraph;
-			if( outsideGraph.SamplingThroughMacros )
-			{
-				if( outsideGraph.IsSRP )
-				{
-					dataCollector.AddToUniforms( m_nodeId, string.Format( Constants.TexDeclarationNoSamplerSRPMacros[ TextureType.Texture2D ], m_internalData ));
-				}
-				else
-				{
-					dataCollector.AddToUniforms( m_nodeId, string.Format( Constants.TexDeclarationNoSamplerStandardMacros[ TextureType.Texture2D ], m_internalData ));
-				}
-			}
-			else
-			{
-				dataCollector.AddToUniforms( m_nodeId, "uniform sampler2D " + m_internalData + ";" );
-			}
+			
+			dataCollector.AddToUniforms( m_nodeId, GeneratorUtils.GetPropertyDeclaraction( m_internalData, TextureType.Texture2D, ";" ) );
 
 			return m_internalData;
 		}
@@ -544,7 +530,7 @@ namespace AmplifyShaderEditor
 			if( connID < m_externalReferences.Count )
 			{
 				ParentNode node = UIUtils.GetNode( m_externalReferences[ connID ].NodeId );
-				if( node is WireNode || node is RelayNode )
+				if( node is WireNode || node is RelayNode || node is FunctionInput )
 				{
 					return node.InputPorts[ 0 ].GetOutputNodeWhichIsNotRelay( connID );
 				}
@@ -753,6 +739,7 @@ namespace AmplifyShaderEditor
 					return (Mathf.Abs( m_previewInternalVec3.x ) < 0.001f &&
 							Mathf.Abs( m_previewInternalVec3.y ) < 0.001f &&
 							Mathf.Abs( m_previewInternalVec3.z ) < 0.001f );
+					case WirePortDataType.UINT4:
 					case WirePortDataType.FLOAT4:
 					return (Mathf.Abs( m_previewInternalVec4.x ) < 0.001f &&
 							Mathf.Abs( m_previewInternalVec4.y ) < 0.001f &&
@@ -1225,7 +1212,7 @@ namespace AmplifyShaderEditor
 		{
 			if( m_inputPreviewTexture == null )
 			{
-				m_inputPreviewTexture = new RenderTexture( 128, 128, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear );
+				m_inputPreviewTexture = new RenderTexture( Constants.PreviewSize , Constants.PreviewSize , 0, Constants.PreviewFormat , RenderTextureReadWrite.Linear );
 				m_inputPreviewTexture.wrapMode = TextureWrapMode.Repeat;
 			}
 
@@ -1354,7 +1341,10 @@ namespace AmplifyShaderEditor
 			//m_inputPreview = null;
 
 			if( m_inputPreviewTexture != null )
+			{
+				m_inputPreviewTexture.Release();
 				UnityEngine.ScriptableObject.DestroyImmediate( m_inputPreviewTexture );
+			}
 			m_inputPreviewTexture = null;
 
 			if( m_inputPreviewMaterial != null )
@@ -1447,6 +1437,8 @@ namespace AmplifyShaderEditor
 					case WirePortDataType.SAMPLER2D:
 					case WirePortDataType.SAMPLER3D:
 					case WirePortDataType.SAMPLERCUBE:
+					case WirePortDataType.SAMPLER2DARRAY:
+					case WirePortDataType.SAMPLERSTATE:
 					default: return false;
 				}
 			}
