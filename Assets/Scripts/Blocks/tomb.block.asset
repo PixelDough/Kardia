@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b09aff04a574167419bf76876217326c, type: 3}
   m_Name: tomb.block
   m_EditorClassIdentifier: 
-  name: tomb.block
+  blockId: tomb.block
   texture: {fileID: 2800000, guid: 44819f5d7fed7c5448aaf9317c30e7c2, type: 3}
   renderNeighborFaces: 0

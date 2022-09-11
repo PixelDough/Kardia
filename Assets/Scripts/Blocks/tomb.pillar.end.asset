@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b09aff04a574167419bf76876217326c, type: 3}
   m_Name: tomb.pillar.end
   m_EditorClassIdentifier: 
-  name: tomb.pillar.end
+  blockId: tomb.pillar.end
   texture: {fileID: 2800000, guid: 6bc401ffb84689b4fa44a832746ae9fe, type: 3}
   renderNeighborFaces: 0
