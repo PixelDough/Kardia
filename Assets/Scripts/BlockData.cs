@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Sirenix.OdinInspector;
@@ -8,31 +9,30 @@ using UnityEngine.Serialization;
 [CreateAssetMenu]
 public class BlockData : ScriptableObject
 {
-    [DisplayAsString]
-    public GUID guid;
-    
-    public new string name = "";
+    [FormerlySerializedAs("name")] public string blockId = "";
 
     [PreviewField()]
     public Texture texture;
 
     public bool renderNeighborFaces = false;
-    
-    private void OnValidate()
-    {
-#if UNITY_EDITOR
-        if (guid.Empty())
-        {
-            guid = GUID.Generate();
-            UnityEditor.EditorUtility.SetDirty(this);
-        }
-#endif
-    }
+
+    public Hash128 IdHash => Hash128.Compute(blockId);
 
     public virtual void AddTexturesToArray(ref Texture2DArray array)
     {
         
     }
+
+    [Button]
+    private void AddToBlockManager()
+    {
+        FindObjectOfType<BlockManager>().AddBlockData(this);
+    }
+
+    // private void Awake()
+    // {
+    //     GameManager.Instance.blockManager.AddBlockData(this);
+    // }
 
     // public int GetTextureID(FaceType _faceType)
     // {

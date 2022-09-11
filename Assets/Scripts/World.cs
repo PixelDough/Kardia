@@ -11,98 +11,20 @@ using Random = UnityEngine.Random;
 
 public class World : MonoBehaviour
 {
-
-    public Transform player;
-    public Vector3 spawn;
-
     public ZoneType zoneType;
 
-    public Room[,,] rooms = new Room[VoxelData.worldSizeInChunks.x, VoxelData.worldSizeInChunks.y, VoxelData.worldSizeInChunks.z];
+    [TableList()] public BlockType[] blockTypes;
 
-    [TableList()]
-    public BlockType[] blockTypes;
+    [HideInInspector] public List<string> blockNames = new();
 
-    [HideInInspector] public List<string> blockNames = new List<string>();
+    [TableList()] public EntitySpawnerType[] entitySpawnerTypes;
 
-    [TableList()]
-    public EntitySpawnerType[] entitySpawnerTypes;
-
-    public Chunk[,,] chunks = new Chunk[VoxelData.worldSizeInChunks.x, VoxelData.worldSizeInChunks.y, VoxelData.worldSizeInChunks.z];
-
-    private List<ChunkCoord> _chunksToCreate = new List<ChunkCoord>();
-    public List<Chunk> chunksToUpdate = new List<Chunk>();
-    public Queue<Chunk> chunksToDraw = new Queue<Chunk>();
-
-    [SerializeField] private Material material;
-    [SerializeField] private Texture2D[] textures;
-    private Texture2DArray _texture2DArray;
+    public readonly Chunk[,,] Chunks = new Chunk[VoxelData.worldSizeInChunks.x, VoxelData.worldSizeInChunks.y,
+        VoxelData.worldSizeInChunks.z];
 
     private void Start()
     {
-        _texture2DArray = new Texture2DArray(16, 16, textures.Length, TextureFormat.RGBA32, true, false);
-        _texture2DArray.filterMode = FilterMode.Point;
-        _texture2DArray.wrapMode = TextureWrapMode.Repeat;
-
-        for (int i = 0; i < textures.Length; i++)
-        {
-            Texture2D tex = textures[i];
-            Graphics.CopyTexture(tex, 0, _texture2DArray, i);
-            // _texture2DArray.SetPixels(tex.GetPixels(0), i, 0);
-        }
-        
-        _texture2DArray.Apply(false, true);
-        
-        material.SetTexture("_MainTex", _texture2DArray);
-            
-        foreach(BlockType bt in blockTypes)
-        {
-            blockNames.Add(bt.name);
-        }
-
         RenderSettings.fogColor = zoneType.fogColor;
-
-
-        List<ChunkCoord> visitedRooms = new List<ChunkCoord>();
-        visitedRooms.Add(new ChunkCoord(0, rooms.GetLength(1)-1, 0));
-
-        //while (visitedRooms.Count > 0)
-        //{
-
-        //    ChunkCoord roomPick = visitedRooms[Random.Range(0, visitedRooms.Count)];
-        //    Vector3 roomPickVector3 = new Vector3(roomPick.x, roomPick.y, roomPick.z);
-        //    Room.Openings directionToOpen = (Room.Openings)Random.Range(0, (int)Room.Openings.Count);
-
-        //    switch (directionToOpen)
-        //    {
-        //        case Room.Openings.Front:
-        //            Vector3 roomCheck = roomPickVector3 + Vector3.forward;
-        //            if (IsChunkInWorld(roomCheck))
-        //            {
-        //                rooms[roomPick.x, roomPick.y, roomPick.z].openings |= directionToOpen;
-        //                rooms[(int)roomCheck.x, (int)roomCheck.y, (int)roomCheck.z].openings |= Room.Openings.Back;
-        //            }
-        //            break;
-        //        case Room.Openings.Right:
-
-        //            break;
-        //        case Room.Openings.Back:
-
-        //            break;
-        //        case Room.Openings.Left:
-
-        //            break;
-        //        case Room.Openings.Up:
-
-        //            break;
-        //        case Room.Openings.Down:
-
-        //            break;
-        //    }
-
-
-
-        //}
-        
 
         // Populate room map
         for (int x = 0; x < VoxelData.worldSizeInChunks.x; x++)
@@ -111,19 +33,20 @@ public class World : MonoBehaviour
             {
                 for (int z = 0; z < VoxelData.worldSizeInChunks.z; z++)
                 {
-                    rooms[x, y, z] = new Room(Room.Openings.Right | Room.Openings.Left, 0, Random.Range(0,4));
-                    rooms[x, y, z] = PickRoomToSpawn(rooms[x, y, z]);
-                    chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this,
-                        (VoxelData.worldSizeInChunks.x > 1 && VoxelData.worldSizeInChunks.y > 1 &&
-                         VoxelData.worldSizeInChunks.z > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x - 1 ||
-                                                                y == 0 || y == VoxelData.worldSizeInChunks.y - 1 ||
-                                                                z == 0 || z == VoxelData.worldSizeInChunks.z - 1),
-                        rooms[x, y, z].rotations);
+                    //rooms[x, y, z] = new Room(Room.Openings.Right | Room.Openings.Left, 0, Random.Range(0, 4));
+                    //rooms[x, y, z] = PickRoomToSpawn(rooms[x, y, z]);
+                    //chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this,
+                    //    (VoxelData.worldSizeInChunks.x > 1 && VoxelData.worldSizeInChunks.y > 1 &&
+                    //     VoxelData.worldSizeInChunks.z > 1) && (x == 0 || x == VoxelData.worldSizeInChunks.x - 1 ||
+                    //                                            y == 0 || y == VoxelData.worldSizeInChunks.y - 1 ||
+                    //                                            z == 0 || z == VoxelData.worldSizeInChunks.z - 1),
+                    //    rooms[x, y, z].rotations);
+
+                    Chunks[x, y, z] = new Chunk(new ChunkCoord(x, y, z), this);
                 }
             }
         }
     }
-
 
     public Room PickRoomToSpawn(Room room)
     {
@@ -143,16 +66,19 @@ public class World : MonoBehaviour
         if (roomType.Contains("u"))
         {
             hasUp = true;
-            rotation = Random.Range(0, 4); // Set random rotation for vertical tunnels, gets overridden if there are any horizontally planar entrances.
+            rotation = Random.Range(0,
+                4); // Set random rotation for vertical tunnels, gets overridden if there are any horizontally planar entrances.
             roomType.Remove(roomType.IndexOf("u", StringComparison.Ordinal));
         }
+
         if (roomType.Contains("d"))
         {
             hasDown = true;
-            rotation = Random.Range(0, 4); // Set random rotation for vertical tunnels, gets overridden if there are any horizontally planar entrances.
+            rotation = Random.Range(0,
+                4); // Set random rotation for vertical tunnels, gets overridden if there are any horizontally planar entrances.
             roomType.Remove(roomType.IndexOf("d", StringComparison.Ordinal));
         }
-        
+
         switch (roomType)
         {
             case "f":
@@ -240,25 +166,24 @@ public class World : MonoBehaviour
                 return index;
             }
         }
+
         return -1;
     }
 
 
     public Chunk GetChunkFromVector3(Vector3 pos)
     {
-
         int x = Mathf.FloorToInt(pos.x / VoxelData.chunkSize.x);
         int y = Mathf.FloorToInt(pos.y / VoxelData.chunkSize.y);
         int z = Mathf.FloorToInt(pos.z / VoxelData.chunkSize.z);
-        return chunks[x, y, z];
-
+        return Chunks[x, y, z];
     }
 
     public bool IsChunkInWorld(ChunkCoord chunkCoord)
     {
-        if (chunkCoord.x < 0 && chunkCoord.x > VoxelData.worldSizeInChunks.x) return false;
-        if (chunkCoord.y < 0 && chunkCoord.y > VoxelData.worldSizeInChunks.y) return false;
-        if (chunkCoord.z < 0 && chunkCoord.z > VoxelData.worldSizeInChunks.z) return false;
+        if (chunkCoord.X < 0 && chunkCoord.X > VoxelData.worldSizeInChunks.x) return false;
+        if (chunkCoord.Y < 0 && chunkCoord.Y > VoxelData.worldSizeInChunks.y) return false;
+        if (chunkCoord.Z < 0 && chunkCoord.Z > VoxelData.worldSizeInChunks.z) return false;
 
         return true;
     }
@@ -270,7 +195,7 @@ public class World : MonoBehaviour
 
     public void DoAllSpawners()
     {
-        foreach(Chunk c in chunks)
+        foreach (Chunk c in Chunks)
         {
             c.DoSpawners();
         }
@@ -278,19 +203,17 @@ public class World : MonoBehaviour
 
     public void DoAllDespawners()
     {
-        foreach (Chunk c in chunks)
+        foreach (Chunk c in Chunks)
         {
             c.DoDespawners();
         }
     }
-
 }
 
 
 [System.Serializable]
 public class Room
 {
-
     public Openings openings;
     public int roomTypeID;
     public int rotations;
@@ -309,29 +232,26 @@ public class Room
     }
 
     [System.Flags]
-    public enum Openings { 
-        Front = 1 << 1, 
-        Back = 1 << 2, 
-        Up = 1 << 3, 
-        Down = 1 << 4, 
-        Left = 1 << 5, 
+    public enum Openings
+    {
+        Front = 1 << 1,
+        Back = 1 << 2,
+        Up = 1 << 3,
+        Down = 1 << 4,
+        Left = 1 << 5,
         Right = 1 << 6,
         Count
     };
-
 }
 
 
 [System.Serializable]
 public class BlockType
 {
-
-    [PreviewField(Alignment = Sirenix.OdinInspector.ObjectFieldAlignment.Center)]
-    [VerticalGroup("SideFaces")]
+    [PreviewField(Alignment = Sirenix.OdinInspector.ObjectFieldAlignment.Center)] [VerticalGroup("SideFaces")]
     public Sprite textureSideFace;
 
-    [PreviewField(Alignment = Sirenix.OdinInspector.ObjectFieldAlignment.Center)]
-    [VerticalGroup("TopBottomFaces")]
+    [PreviewField(Alignment = Sirenix.OdinInspector.ObjectFieldAlignment.Center)] [VerticalGroup("TopBottomFaces")]
     public Sprite textureTopBottomFace;
 
     public bool renderNeighborFaces = false;
@@ -339,7 +259,11 @@ public class BlockType
 
     public string name = "";
 
-    public enum FaceType { Side, TopBottom };
+    public enum FaceType
+    {
+        Side,
+        TopBottom
+    };
 
     public int GetTextureID(FaceType _faceType)
     {
@@ -353,10 +277,5 @@ public class BlockType
                 Debug.Log("Error in GetTextureID; invalid face index");
                 return 0;
         }
-
     }
-
 }
-
-
-

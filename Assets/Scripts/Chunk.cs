@@ -1,130 +1,90 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using UnityEditor;
+using UnityEngine;
+using UnityEngine.Rendering;
+using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 public class Chunk
 {
+    public ChunkCoord Coord;
+    public ChunkVoxelPalette ChunkVoxelPalette;
+    public VoxelState[,,] VoxelMap =
+        new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
 
-    public ChunkCoord coord;
-    public bool isBorderChunk;
+    private readonly MeshFilter _meshFilter;
+    private readonly MeshCollider _meshCollider;
+    private readonly GameObject _chunkObject;
+    private readonly Vector3 _position;
 
-    bool isVoxelMapPopulated = false;
-    private bool _isActive = false;
+    private int _vertexIndex;
 
-    MeshRenderer meshRenderer;
-    MeshFilter meshFilter;
-    MeshCollider meshCollider;
-    public GameObject chunkObject;
-    Vector3 position;
+    private readonly List<Vector3> _vertices = new();
+    private readonly List<int> _triangles = new();
+    private readonly List<Vector3> _uvs = new();
+    private readonly List<Vector3> _normals = new();
+    private readonly List<Spawner> _spawners = new();
 
-    int rotations = 0;
+    private readonly Queue<Vector3> _lightBfsQueue = new();
+    private readonly List<Color> _colors = new();
+    private float[,,] _lightMap = new float[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
 
-    int vertexIndex = 0;
+    private readonly Queue<Vector3Int> _spawnersToUpdate = new();
+    private readonly Queue<Vector3Int> _blocksToUpdate = new();
 
-    List<Vector3> vertices = new List<Vector3>();
-    List<int> triangles = new List<int>();
-    List<Vector3> uvs = new List<Vector3>();
-    List<Vector3> normals = new List<Vector3>();
-    List<Spawner> spawners = new List<Spawner>();
+    private readonly World _world;
 
-    Queue<Vector3> lightBfsQueue = new Queue<Vector3>();
-    List<Color> colors = new List<Color>();
-    float[,,] lightMap = new float[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
-
-    VoxelState[,,] voxelMap = new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
-
-    Queue<Vector3Int> spawnersToUpdate = new Queue<Vector3Int>();
-    Queue<Vector3Int> blocksToUpdate = new Queue<Vector3Int>();
-
-    World world;
-
-    public Chunk(ChunkCoord _coord, World _world, bool _isBorderChunk = false, int _rotations = 0)
+    public Chunk(ChunkCoord coord, World world)
     {
+        Coord = coord;
+        _world = world;
 
-        coord = _coord;
-        world = _world;
-        isBorderChunk = _isBorderChunk;
-        rotations = _rotations;
+        _chunkObject = new GameObject();
+        _meshFilter = _chunkObject.AddComponent<MeshFilter>();
+        var meshRenderer = _chunkObject.AddComponent<MeshRenderer>();
+        _meshCollider = _chunkObject.AddComponent<MeshCollider>();
+        _chunkObject.isStatic = false;
+        _chunkObject.tag = "Wall";
+        _chunkObject.layer = LayerMask.NameToLayer("Wall");
 
-        chunkObject = new GameObject();
-        meshFilter = chunkObject.AddComponent<MeshFilter>();
-        meshRenderer = chunkObject.AddComponent<MeshRenderer>();
-        meshCollider = chunkObject.AddComponent<MeshCollider>();
-        chunkObject.isStatic = false;
-        chunkObject.tag = "Wall";
-        chunkObject.layer = LayerMask.NameToLayer("Wall");
-
-        meshRenderer.material = world.zoneType.blockMaterial;
-        meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        meshRenderer.material = _world.zoneType.blockMaterial;
+        meshRenderer.shadowCastingMode = ShadowCastingMode.On;
         //meshRenderer.receiveShadows = false;
 
-        chunkObject.transform.SetParent(world.transform);
-        chunkObject.transform.position = new Vector3(coord.x * VoxelData.chunkSize.x, coord.y * VoxelData.chunkSize.y, coord.z * VoxelData.chunkSize.z);
-        chunkObject.name = coord.x + ", " + coord.y + ", " + coord.z;
-        position = chunkObject.transform.position;
+        _chunkObject.transform.SetParent(this._world.transform);
+        _chunkObject.transform.position = new Vector3(Coord.X * VoxelData.chunkSize.x, Coord.Y * VoxelData.chunkSize.y,
+            Coord.Z * VoxelData.chunkSize.z);
+        _chunkObject.name = Coord.X + ", " + Coord.Y + ", " + Coord.Z;
+        _position = _chunkObject.transform.position;
+
+        ChunkVoxelPalette = ChunkVoxelPalette.Create();
 
         GenerateVoxelMap();
-
-        if (!isBorderChunk && VoxelData.chunkSize.x > 1 && VoxelData.chunkSize.y > 1 && VoxelData.chunkSize.z > 1)
-        {
-            //string roomExtension = "%";
-            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Front)) roomExtension += "F";
-            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Right)) roomExtension += "R";
-            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Back)) roomExtension += "B";
-            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Left)) roomExtension += "L";
-            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Up)) roomExtension += "U";
-            //if (world.rooms[coord.x, coord.y, coord.z].openings.HasFlag(Room.Openings.Down)) roomExtension += "D";
-            //roomExtension += "%";
-
-            string roomExtension = "%";
-            roomExtension += world.rooms[coord.x, coord.y, coord.z].roomTypeID;
-            roomExtension += "%";
-
-            Debug.Log(roomExtension);
-
-            string[] chunkFiles = Directory.GetFiles(Application.streamingAssetsPath + "/Rooms", "tomb_*" + roomExtension + "*.chunk");
-            if (chunkFiles.Length > 0)
-            {
-                string selectedChunkFile = Path.GetFileNameWithoutExtension(chunkFiles[Random.Range(0, chunkFiles.Length)]);
-                LoadChunk(selectedChunkFile);
-            }
-        }
-
-
     }
-
 
     public void GenerateVoxelMap()
     {
-        //for (int i = 0; i < chunkObject.transform.childCount; i++)
-        //{
-        //    Object.Destroy(chunkObject.transform.GetChild(i));
-        //}
-
         ClearMeshData();
+        
+        ChunkVoxelPalette.palette.Add(new Hash128());
+        ChunkVoxelPalette.palette.Add(Hash128.Compute("tomb.block"));
+        ChunkVoxelPalette.palette.Add(Hash128.Compute("tomb.tile"));
+        ChunkVoxelPalette.palette.Add(Hash128.Compute("tomb.sand"));
 
-        for (int x = 0; x < VoxelData.chunkSize.x; x++)
+        for (var x = 0; x < VoxelData.chunkSize.x; x++)
+        for (var y = 0; y < VoxelData.chunkSize.y; y++)
+        for (var z = 0; z < VoxelData.chunkSize.z; z++)
         {
-            for (int y = 0; y < VoxelData.chunkSize.y; y++)
+            _lightMap[x, y, z] = 0;
+            VoxelMap[x, y, z] = new VoxelState();
+            if (y == 0)
             {
-                for (int z = 0; z < VoxelData.chunkSize.z; z++)
+                VoxelMap[x, y, z] = new VoxelState()
                 {
-                    lightMap[x, y, z] = 0;
-
-                    if (!isBorderChunk)
-                    {
-                        //voxelMap[x, y, z] = new VoxelState(Random.Range(1, world.blockTypes.Length));
-                        if ((x == 0 || x == VoxelData.chunkSize.x - 1) || (y == 0 || y == VoxelData.chunkSize.y - 1) || (z == 0 || z == VoxelData.chunkSize.z - 1)) voxelMap[x, y, z] = new VoxelState(1, "tomb:block");
-                        else voxelMap[x, y, z] = new VoxelState(0, "air");
-                    }
-                    else
-                    {
-                        voxelMap[x, y, z] = new VoxelState(10, "barrier");
-                    }
-                }
+                    index = Random.Range(1, 4)
+                };
             }
         }
 
@@ -132,602 +92,333 @@ public class Chunk
         CreateMesh();
     }
 
-
     public void CreateMeshData()
     {
-
         ClearMeshData();
 
-        for (int x = 0; x < VoxelData.chunkSize.x; x++)
-        {
-            for (int y = 0; y < VoxelData.chunkSize.y; y++)
-            {
-                for (int z = 0; z < VoxelData.chunkSize.z; z++)
-                {
-                    UpdateMeshData(new Vector3(x, y, z));
-
-                }
-            }
-        }
+        for (var x = 0; x < VoxelData.chunkSize.x; x++)
+        for (var y = 0; y < VoxelData.chunkSize.y; y++)
+        for (var z = 0; z < VoxelData.chunkSize.z; z++)
+            UpdateMeshData(new Vector3(x, y, z));
 
         UpdateSpawners();
-
-        while (lightBfsQueue.Count > 0)
-        {
-            Vector3 v = lightBfsQueue.Peek();
-
-            lightBfsQueue.Dequeue();
-        }
 
         UpdateBlocks();
     }
 
-
-    public bool isActive
+    private bool IsVoxelInChunk(int x, int y, int z)
     {
-        get { return _isActive; }
-        set
-        {
-            _isActive = value;
-            if (chunkObject != null)
-                chunkObject.SetActive(value);
-        }
-    }
-
-    public bool isEditable
-    {
-        get
-        {
-            if (!isVoxelMapPopulated)
-                return false;
-            else
-                return true;
-        }
-    }
-
-    public void EditVoxel(Vector3 pos, int newID, VoxelData.VoxelTypes _voxelType = VoxelData.VoxelTypes.Block)
-    {
-        int xCheck = Mathf.FloorToInt(pos.x);
-        int yCheck = Mathf.FloorToInt(pos.y);
-        int zCheck = Mathf.FloorToInt(pos.z);
-
-        xCheck -= Mathf.FloorToInt(chunkObject.transform.position.x);
-        yCheck -= Mathf.FloorToInt(chunkObject.transform.position.y);
-        zCheck -= Mathf.FloorToInt(chunkObject.transform.position.z);
-
-        voxelMap[xCheck, yCheck, zCheck].id = newID;
-        voxelMap[xCheck, yCheck, zCheck].blockName = world.blockNames[newID];
-        voxelMap[xCheck, yCheck, zCheck].voxelType = _voxelType;
-
-        CreateMeshData();
-        CreateMesh();
-    }
-
-    bool IsVoxelInChunk(int x, int y, int z)
-    {
-        if (x < 0 || x > VoxelData.chunkSize.x - 1 || y < 0 || y > VoxelData.chunkSize.y - 1 || z < 0 || z > VoxelData.chunkSize.z - 1)
+        if (x < 0 || x > VoxelData.chunkSize.x - 1 || y < 0 || y > VoxelData.chunkSize.y - 1 || z < 0 ||
+            z > VoxelData.chunkSize.z - 1)
             return false;
-        else return true;
+        return true;
     }
 
     public void DoSpawners()
     {
-        foreach (Spawner s in spawners)
-        {
-            s.DoSpawn();
-        }
+        foreach (var s in _spawners) s.DoSpawn();
     }
 
     public void DoDespawners()
     {
-        foreach (Spawner s in spawners)
-        {
-            s.DoDespawn();
-        }
+        foreach (var s in _spawners) s.DoDespawn();
     }
-
 
     public void CreateMesh()
     {
-        Mesh mesh = new Mesh();
-        mesh.vertices = vertices.ToArray();
-        mesh.triangles = triangles.ToArray();
-        mesh.SetUVs(0, uvs);
-        //Debug.LogError(vertices.Count + " " + colors.Count);
-        mesh.colors = colors.ToArray();
+        Mesh mesh = new Mesh
+        {
+            vertices = _vertices.ToArray(),
+            triangles = _triangles.ToArray()
+        };
+        mesh.SetUVs(0, _uvs);
+        
+        mesh.colors = _colors.ToArray();
 
-        mesh.normals = normals.ToArray();
-        //mesh.RecalculateNormals();
+        mesh.normals = _normals.ToArray();
 
-        meshFilter.mesh = mesh;
-        meshCollider.sharedMesh = mesh;
+        _meshFilter.mesh = mesh;
+        _meshCollider.sharedMesh = mesh;
     }
 
-
-    void ClearMeshData(bool clearSpawners = false)
+    private void ClearMeshData(bool clearSpawners = false)
     {
-        vertexIndex = 0;
-        vertices.Clear();
-        triangles.Clear();
-        uvs.Clear();
-        normals.Clear();
-        colors.Clear();
-        lightBfsQueue.Clear();
-        lightMap = new float[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
-        spawnersToUpdate.Clear();
-        blocksToUpdate.Clear();
+        _vertexIndex = 0;
+        _vertices.Clear();
+        _triangles.Clear();
+        _uvs.Clear();
+        _normals.Clear();
+        _colors.Clear();
+        _lightBfsQueue.Clear();
+        _lightMap = new float[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
+        _spawnersToUpdate.Clear();
+        _blocksToUpdate.Clear();
     }
 
-
-    bool CheckVoxel(Vector3 pos)
+    private bool CheckVoxel(Vector3 pos)
     {
-        int x = Mathf.FloorToInt(pos.x);
-        int y = Mathf.FloorToInt(pos.y);
-        int z = Mathf.FloorToInt(pos.z);
+        var x = Mathf.FloorToInt(pos.x);
+        var y = Mathf.FloorToInt(pos.y);
+        var z = Mathf.FloorToInt(pos.z);
 
         // If position is outside of this chunk...
-        if (!IsVoxelInChunk(x, y, z))
-            return false;
+        if (!IsVoxelInChunk(x, y, z)) return false;
 
-        return world.blockTypes[voxelMap[x, y, z].id].isSolid;
+        return true; //_world.blockTypes[VoxelMap[x, y, z].id].isSolid;
     }
-
 
     private void UpdateSpawners()
     {
-        while (spawnersToUpdate.Count > 0)
-        {
-            Vector3Int spawnerCurrent = spawnersToUpdate.Dequeue();
-
-            EntitySpawnerType entitySpawnerType = world.entitySpawnerTypes[voxelMap[spawnerCurrent.x, spawnerCurrent.y, spawnerCurrent.z].id];
-
-            if (entitySpawnerType.isLight)
-            {
-                lightMap[spawnerCurrent.x, spawnerCurrent.y, spawnerCurrent.z] = 1;
-                lightBfsQueue.Enqueue(new Vector3(spawnerCurrent.x, spawnerCurrent.y, spawnerCurrent.z));
-            }
-
-            bool doCreate = true;
-
-            foreach (Spawner s in spawners.ToArray())
-            {
-                if (Vector3.Distance(spawnerCurrent + chunkObject.transform.position, s.position) <= 0.05f)
-                {
-                    doCreate = false;
-                }
-            }
-
-            if (doCreate)
-                spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner, spawnerCurrent + chunkObject.transform.position, Quaternion.identity).GetComponent<Spawner>());
-            //voxelMap[x, y, z].spawned = true;
-        }
+        // while (_spawnersToUpdate.Count > 0)
+        // {
+        //     var spawnerCurrent = _spawnersToUpdate.Dequeue();
+        //
+        //     var entitySpawnerType =
+        //         _world.entitySpawnerTypes[VoxelMap[spawnerCurrent.x, spawnerCurrent.y, spawnerCurrent.z].id];
+        //
+        //     if (entitySpawnerType.isLight)
+        //     {
+        //         _lightMap[spawnerCurrent.x, spawnerCurrent.y, spawnerCurrent.z] = 1;
+        //         _lightBfsQueue.Enqueue(new Vector3(spawnerCurrent.x, spawnerCurrent.y, spawnerCurrent.z));
+        //     }
+        //
+        //     var doCreate = true;
+        //
+        //     foreach (var s in _spawners.ToArray())
+        //         if (Vector3.Distance(spawnerCurrent + _chunkObject.transform.position, s.position) <= 0.05f)
+        //             doCreate = false;
+        //
+        //     if (doCreate)
+        //         _spawners.Add(Object.Instantiate(entitySpawnerType.prefabSpawner,
+        //                 spawnerCurrent + _chunkObject.transform.position, Quaternion.identity)
+        //             .GetComponent<Spawner>());
+        // }
     }
-
 
     private void UpdateBlocks()
     {
-        while (blocksToUpdate.Count > 0)
+        while (_blocksToUpdate.Count > 0)
         {
-            Vector3Int blockCurrent = blocksToUpdate.Dequeue();
+            var blockCurrent = _blocksToUpdate.Dequeue();
 
-            string blockName = voxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].blockName;
-            int blockID = voxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].id;
+            var blockID = ChunkVoxelPalette.palette[VoxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].index];
+            var blockData = GameManager.Instance.blockManager.GetBlockData(blockID);
+            // if (blockID == -1)
+            // {
+            //     blockID = VoxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].id;
+            //     VoxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].blockName = _world.blockTypes[blockID].name;
+            // }
 
-            blockID = world.GetBlockIndex(blockName);
-
-            if (blockID == -1)
+            for (var p = 0; p < 6; p++)
             {
-                blockID = voxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].id;
-                voxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].blockName = world.blockTypes[blockID].name;
-            }
+                var newCheck = new Vector3Int((int)(blockCurrent.x + VoxelData.faceChecks[p].x),
+                    (int)(blockCurrent.y + VoxelData.faceChecks[p].y),
+                    (int)(blockCurrent.z + VoxelData.faceChecks[p].z));
 
-            for (int p = 0; p < 6; p++)
-            {
+                VoxelState neighbor = default;
+                if (CheckVoxel(newCheck)) neighbor = VoxelMap[newCheck.x, newCheck.y, newCheck.z];
 
-                Vector3Int newCheck = new Vector3Int((int)(blockCurrent.x + VoxelData.faceChecks[p].x), (int)(blockCurrent.y + VoxelData.faceChecks[p].y), (int)(blockCurrent.z + VoxelData.faceChecks[p].z));
-
-                VoxelState neighbor = null;
-                if (CheckVoxel(newCheck))
-                    neighbor = voxelMap[newCheck.x, newCheck.y, newCheck.z];
-
-                if ((neighbor == null || (world.blockTypes[neighbor.id].renderNeighborFaces && world.blockTypes[neighbor.id].name != world.blockTypes[blockID].name) || neighbor.voxelType != VoxelData.VoxelTypes.Block) && world.blockTypes[blockID].isSolid)
+                var neighborBlockId = ChunkVoxelPalette.palette[neighbor.index];
+                var neighborBlockData = GameManager.Instance.blockManager.GetBlockData(neighborBlockId);
+                
+                if (neighborBlockData == null ||
+                    (neighborBlockData.renderNeighborFaces))
                 {
-                    for (int i = 0; i < 4; i++)
+                    for (var i = 0; i < 4; i++)
                     {
-                        Vector3 vertPos = blockCurrent + VoxelData.voxelVerts[VoxelData.voxelTris[p, i]];
-                        Vector3 vertNorm = VoxelData.faceChecks[p];
+                        var vertPos = blockCurrent + VoxelData.voxelVerts[VoxelData.voxelTris[p, i]];
+                        var vertNorm = VoxelData.faceChecks[p];
 
-                        vertices.Add(vertPos);
-                        normals.Add(vertNorm);
+                        _vertices.Add(vertPos);
+                        _normals.Add(vertNorm);
 
                         float lightValue = 0;
 
-                        colors.Add(new Color(0, 0, 0, 0));
+                        _colors.Add(new Color(0, 0, 0, 0));
                     }
 
                     if (p == 2 || p == 3)
-                        AddTexture(world.blockTypes[blockID].textureTopBottomFace, blockID);
+                        AddTexture(GameManager.Instance.blockManager.GetBlockTextureIndexTest(blockData.IdHash));
                     else
-                        AddTexture(world.blockTypes[blockID].textureSideFace, blockID);
+                        AddTexture(GameManager.Instance.blockManager.GetBlockTextureIndexTest(blockData.IdHash));
 
+                    _triangles.Add(_vertexIndex);
+                    _triangles.Add(_vertexIndex + 1);
+                    _triangles.Add(_vertexIndex + 2);
+                    _triangles.Add(_vertexIndex + 2);
+                    _triangles.Add(_vertexIndex + 1);
+                    _triangles.Add(_vertexIndex + 3);
 
-                    //if (IsVoxelInChunk(newCheck.x, newCheck.y, newCheck.z))
-                    //{
-                    //    float lightValue = lightMap[newCheck.x, newCheck.y, newCheck.z];
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-
-                    //}
-                    //else
-                    //{
-                    //    float lightValue = 1;
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //    colors.Add(new Color(1, 1, 1, lightValue));
-                    //}
-
-
-
-                    //colors.Add(new Color(0, 0, 0, 0.5f));
-                    //colors.Add(new Color(0, 0, 0, 0.5f));
-                    //colors.Add(new Color(0, 0, 0, 0.5f));
-                    //colors.Add(new Color(0, 0, 0, 0.5f));
-
-
-                    triangles.Add(vertexIndex);
-                    triangles.Add(vertexIndex + 1);
-                    triangles.Add(vertexIndex + 2);
-                    triangles.Add(vertexIndex + 2);
-                    triangles.Add(vertexIndex + 1);
-                    triangles.Add(vertexIndex + 3);
-
-                    vertexIndex += 4;
-
+                    _vertexIndex += 4;
                 }
-
-
             }
         }
     }
 
-
-    void UpdateMeshData(Vector3 pos)
+    private void UpdateMeshData(Vector3 pos)
     {
+        var x = Mathf.FloorToInt(pos.x);
+        var y = Mathf.FloorToInt(pos.y);
+        var z = Mathf.FloorToInt(pos.z);
 
-        int x = Mathf.FloorToInt(pos.x);
-        int y = Mathf.FloorToInt(pos.y);
-        int z = Mathf.FloorToInt(pos.z);
+        if (VoxelMap[x, y, z].index == 0) return;
+        var blockID = ChunkVoxelPalette.palette[VoxelMap[x, y, z].index];
 
-        //Debug.LogError(voxelMap[x, y, z] != null);
-
-        string blockName = voxelMap[x, y, z].blockName;
-        //Debug.Log(blockName);
-
-        int blockID = voxelMap[x, y, z].id;
-
-        blockID = world.GetBlockIndex(blockName);
-
-        if (blockID == -1)
-        {
-            blockID = voxelMap[x, y, z].id;
-            voxelMap[x, y, z].blockName = world.blockTypes[blockID].name;
-        }
-
-        foreach (Spawner s in spawners.ToArray())
-        {
-            if (Vector3.Distance(pos + chunkObject.transform.position, s.position) <= 0.05f)
-            {
-                spawners.Remove(s);
-                Object.Destroy(s.gameObject);
-
-            }
-
-        }
+        // foreach (var s in _spawners.ToArray())
+        //     if (Vector3.Distance(pos + _chunkObject.transform.position, s.position) <= 0.05f)
+        //     {
+        //         _spawners.Remove(s);
+        //         Object.Destroy(s.gameObject);
+        //     }
 
         // TODO: Move this into it's own function. Update spawners, then update lighting, then update voxel data.
-        if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.EntitySpawner)
-        {
-
-            spawnersToUpdate.Enqueue(new Vector3Int(x, y, z));
-
-            
-
-        }
-
+        // if (VoxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.EntitySpawner)
+        //     _spawnersToUpdate.Enqueue(new Vector3Int(x, y, z));
 
         // BLOCKS
-        if (voxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.Block)
-        {
-
-            blocksToUpdate.Enqueue(new Vector3Int(x, y, z));
-
-            
-        }
-
-        // DELETE THIS
-
-        
-        
-
+        // if (VoxelMap[x, y, z].voxelType == VoxelData.VoxelTypes.Block) _blocksToUpdate.Enqueue(new Vector3Int(x, y, z));
+        _blocksToUpdate.Enqueue(new Vector3Int(x, y, z));
     }
 
-    public VoxelState GetVoxelFromMap(Vector3 pos)
+    private void AddTexture(int blockIdTest = 0)
     {
-
-        pos -= position;
-
-        if (pos.x < 0 || pos.x > VoxelData.chunkSize.x) return null;
-        if (pos.y < 0 || pos.y > VoxelData.chunkSize.y) return null;
-        if (pos.z < 0 || pos.z > VoxelData.chunkSize.z) return null;
-
-        return voxelMap[(int)pos.x, (int)pos.y, (int)pos.z];
-
-    }
-
-    void AddTexture(int textureID)
-    {
-
-
-        float y = textureID / VoxelData.textureAtlasSizeInBlocks;
-        float x = textureID - (y * VoxelData.textureAtlasSizeInBlocks);
-
-        x *= VoxelData.normalizedBlockTextureSize;
-        y *= VoxelData.normalizedBlockTextureSize;
-
-        y = 1f - y - VoxelData.normalizedBlockTextureSize;
-
-        uvs.Add(new Vector2(x, y));
-        uvs.Add(new Vector2(x, y + VoxelData.normalizedBlockTextureSize));
-        uvs.Add(new Vector2(x + VoxelData.normalizedBlockTextureSize, y));
-        uvs.Add(new Vector2(x + VoxelData.normalizedBlockTextureSize, y + VoxelData.normalizedBlockTextureSize));
-    }
-
-    void AddTexture(Sprite sprite, int blockIdTest = 0)
-    {
-        //It's important to note that Rect is a value type because it is a struct, so this copies the Rect.  You don't want to change the original.
-
-        float x = sprite.rect.x;
-        float y = sprite.rect.y;
-        float width = sprite.rect.width;
-        float height = sprite.rect.height;
-
-        x /= sprite.texture.width;
-        width /= sprite.texture.width;
-        y /= sprite.texture.height;
-        height /= sprite.texture.height;
-
-        // uvs.Add(new Vector2(x, y));
-        // uvs.Add(new Vector2(x, y + height));
-        // uvs.Add(new Vector2(x + width, y));
-        // uvs.Add(new Vector2(x + width, y + height));
-
-        int rand = Random.Range(0, 29);
-        uvs.Add(new Vector3(0, 0, blockIdTest));
-        uvs.Add(new Vector3(0, 1, blockIdTest));
-        uvs.Add(new Vector3(1, 0, blockIdTest));
-        uvs.Add(new Vector3(1, 1, blockIdTest));
+        var rand = Random.Range(0, 29);
+        _uvs.Add(new Vector3(0, 0, blockIdTest));
+        _uvs.Add(new Vector3(0, 1, blockIdTest));
+        _uvs.Add(new Vector3(1, 0, blockIdTest));
+        _uvs.Add(new Vector3(1, 1, blockIdTest));
     }
 
     public void SaveChunk(string fileName)
     {
-        VoxelMapData voxelMapData = new VoxelMapData(voxelMap);
-
-        Debug.Log("Saving Chunk");
-
-        //BinaryFormatter bf = new BinaryFormatter();
-        //FileStream file = File.Create(Application.dataPath + "/" + fileName + ".chunk");
-        //bf.Serialize(file, voxelMapData);
-        //file.Close();
-
-        string json = JsonUtility.ToJson(voxelMapData);
-        File.WriteAllText(Application.streamingAssetsPath + "/Rooms/" + fileName + ".chunk", json);
-        Debug.Log("Saved Chunk as: " + fileName + ".chunk");
+        // ChunkData chunkData = new ChunkData(VoxelMap);
+        //
+        // Debug.Log("Saving Chunk");
+        //
+        // //BinaryFormatter bf = new BinaryFormatter();
+        // //FileStream file = File.Create(Application.dataPath + "/" + fileName + ".chunk");
+        // //bf.Serialize(file, voxelMapData);
+        // //file.Close();
+        //
+        // var json = JsonUtility.ToJson(chunkData);
+        // File.WriteAllText(Application.streamingAssetsPath + "/Rooms/" + fileName + ".chunk", json);
+        // Debug.Log("Saved Chunk as: " + fileName + ".chunk");
     }
 
     public void LoadChunk(string fileName)
     {
-        Debug.Log("Loading Chunk");
-
-        //BinaryFormatter bf = new BinaryFormatter();
-        //FileStream file = File.Open(Application.dataPath + "/" + fileName + ".chunk", FileMode.Open);
-        //object voxelMapData = bf.Deserialize<VoxelMapData>(file);
-        //voxelMapData.
-        //file.Close();
-
-        string json = File.ReadAllText(Application.streamingAssetsPath + "/Rooms/" + fileName + ".chunk");
-        VoxelMapData voxelMapData = new VoxelMapData();
-        voxelMapData.voxelMaps = JsonUtility.FromJson<VoxelMapData>(json).voxelMaps;
-
-        voxelMap = voxelMapData.GetFullVoxelMap();
-
-
-        VoxelState[,,] newVoxelStates = new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
-
-        for (int x = 0; x < VoxelData.chunkSize.x; x++)
-        {
-            for (int y = 0; y < VoxelData.chunkSize.y; y++)
-            {
-                for (int z = 0; z < VoxelData.chunkSize.z; z++)
-                {
-
-                    // Chunk rotation system
-                    Vector3 voxelPos = new Vector3(x, y, z);
-                    Vector3 pos = voxelPos;
-                    for (int i = 0; i < rotations; i++)
-                    {
-                        pos.z = VoxelData.chunkSize.x - 1 - voxelPos.x;
-                        pos.x = voxelPos.z;
-
-                        voxelPos = pos;
-                    }
-
-                    VoxelState vs = new VoxelState(0);
-
-                    if (IsVoxelInChunk(x, y, z))
-                    {
-                        vs.blockName = voxelMap[x, y, z].blockName;
-                        vs.id = voxelMap[x, y, z].id;
-                        vs.voxelType = voxelMap[x, y, z].voxelType;
-                    }
-
-                    //Debug.Log(new Vector3(pos.z, pos.y, VoxelData.chunkSize.x - 1 - pos.x));
-                    try
-                    {
-                        // ROTATION
-                        newVoxelStates[(int)pos.z, (int)pos.y, VoxelData.chunkSize.x - 1 - (int)pos.x] = vs;
-                        //newVoxelStates[(int)pos.z, (int)pos.y, VoxelData.chunkSize.x - (int)pos.x] = vs;
-                    }
-                    catch
-                    {
-                        Debug.LogError(new Vector3Int((int)pos.x, (int)pos.y, (int)pos.z));
-                    }
-                }
-            }
-        }
-
-        voxelMap = newVoxelStates;
-
-        CreateMeshData();
-        CreateMesh();
-
-        Debug.Log("Loaded Chunk: " + fileName + ".chunk");
+        // Debug.Log("Loading Chunk");
+        //
+        // //BinaryFormatter bf = new BinaryFormatter();
+        // //FileStream file = File.Open(Application.dataPath + "/" + fileName + ".chunk", FileMode.Open);
+        // //object voxelMapData = bf.Deserialize<VoxelMapData>(file);
+        // //voxelMapData.
+        // //file.Close();
+        //
+        // var json = File.ReadAllText(Application.streamingAssetsPath + "/Rooms/" + fileName + ".chunk");
+        // ChunkData chunkData = new ChunkData();
+        // chunkData.voxelMaps = JsonUtility.FromJson<ChunkData>(json).voxelMaps;
+        //
+        // VoxelMap = chunkData.GetFullVoxelMap();
+        //
+        // var newVoxelStates =
+        //     new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
+        //
+        // for (var x = 0; x < VoxelData.chunkSize.x; x++)
+        // for (var y = 0; y < VoxelData.chunkSize.y; y++)
+        // for (var z = 0; z < VoxelData.chunkSize.z; z++)
+        // {
+        //     // Chunk rotation system
+        //     var voxelPos = new Vector3(x, y, z);
+        //     var pos = voxelPos;
+        //     for (var i = 0; i < rotations; i++)
+        //     {
+        //         pos.z = VoxelData.chunkSize.x - 1 - voxelPos.x;
+        //         pos.x = voxelPos.z;
+        //
+        //         voxelPos = pos;
+        //     }
+        //
+        //     var vs = new VoxelState(0);
+        //
+        //     if (IsVoxelInChunk(x, y, z))
+        //     {
+        //         vs.blockName = VoxelMap[x, y, z].blockName;
+        //         vs.id = VoxelMap[x, y, z].id;
+        //         vs.voxelType = VoxelMap[x, y, z].voxelType;
+        //     }
+        //
+        //     //Debug.Log(new Vector3(pos.z, pos.y, VoxelData.chunkSize.x - 1 - pos.x));
+        //     try
+        //     {
+        //         // ROTATION
+        //         newVoxelStates[(int)pos.z, (int)pos.y, VoxelData.chunkSize.x - 1 - (int)pos.x] = vs;
+        //         //newVoxelStates[(int)pos.z, (int)pos.y, VoxelData.chunkSize.x - (int)pos.x] = vs;
+        //     }
+        //     catch
+        //     {
+        //         Debug.LogError(new Vector3Int((int)pos.x, (int)pos.y, (int)pos.z));
+        //     }
+        // }
+        //
+        // VoxelMap = newVoxelStates;
+        //
+        // CreateMeshData();
+        // CreateMesh();
+        //
+        // Debug.Log("Loaded Chunk: " + fileName + ".chunk");
     }
 
     public int GetBlockArrayIndex(Vector3 pos)
     {
         return (int)(VoxelData.chunkSize.y * VoxelData.chunkSize.x * pos.z + VoxelData.chunkSize.x * pos.y + pos.x);
     }
-
 }
 
-public class ChunkCoord
+public struct ChunkCoord
 {
+    public readonly int X;
+    public readonly int Y;
+    public readonly int Z;
 
-    public int x;
-    public int y;
-    public int z;
-
-    public ChunkCoord()
+    public ChunkCoord(int x, int y, int z)
     {
-
-        x = 0;
-        y = 0;
-        z = 0;
-
-    }
-
-    public ChunkCoord(int _x, int _y, int _z)
-    {
-
-        x = _x;
-        y = _y;
-        z = _z;
-
+        X = x;
+        Y = y;
+        Z = z;
     }
 
     public ChunkCoord(Vector3 pos)
     {
+        var posInt = new Vector3Int(Mathf.RoundToInt(pos.x), Mathf.RoundToInt(pos.y), Mathf.RoundToInt(pos.z));
 
-        Vector3 posInt = new Vector3(Mathf.RoundToInt(pos.x), Mathf.RoundToInt(pos.y), Mathf.RoundToInt(pos.z));
-
-        x = (int)posInt.x / VoxelData.chunkSize.x;
-        y = (int)posInt.y / VoxelData.chunkSize.y;
-        z = (int)posInt.z / VoxelData.chunkSize.z;
-
+        X = posInt.x / VoxelData.chunkSize.x;
+        Y = posInt.y / VoxelData.chunkSize.y;
+        Z = posInt.z / VoxelData.chunkSize.z;
     }
-
-    public bool Equals(ChunkCoord other)
-    {
-
-        if (other == null)
-            return false;
-        else if (other.x == x && other.y == y && other.z == z)
-            return true;
-        else
-            return false;
-
-    }
-
 }
 
-[System.Serializable]
-public class VoxelMapData
+[Serializable]
+public struct ChunkVoxelPalette
 {
-    [SerializeField]
-    public VoxelState[] voxelMaps = new VoxelState[VoxelData.chunkSize.x * VoxelData.chunkSize.y * VoxelData.chunkSize.z];
+    public List<Hash128> palette;
 
-    public VoxelMapData(VoxelState[,,] voxelStates)
+    public static ChunkVoxelPalette Create()
     {
-        for (int x = 0; x < VoxelData.chunkSize.x; x++)
+        return new ChunkVoxelPalette()
         {
-            for (int y = 0; y < VoxelData.chunkSize.y; y++)
-            {
-                for (int z = 0; z < VoxelData.chunkSize.z; z++)
-                {
-                    int index = VoxelData.chunkSize.y * VoxelData.chunkSize.x * z + VoxelData.chunkSize.x * y + x;
-                    voxelMaps[index] = voxelStates[x, y, z];
-                }
-            }
-        }
+            palette = new List<Hash128>()
+        };
     }
-
-    public VoxelMapData()
-    {
-        
-        //voxelMaps[0] = new VoxelState(0, "");
-    }
-
-    public VoxelState[,,] GetFullVoxelMap()
-    {
-
-        VoxelState[,,] fullVoxelMap = new VoxelState[VoxelData.chunkSize.x, VoxelData.chunkSize.y, VoxelData.chunkSize.z];
-
-        for (int x = 0; x < VoxelData.chunkSize.x; x++)
-        {
-            for (int y = 0; y < VoxelData.chunkSize.y; y++)
-            {
-                for (int z = 0; z < VoxelData.chunkSize.z; z++)
-                {
-                    
-                    int index = VoxelData.chunkSize.y * VoxelData.chunkSize.x * z + VoxelData.chunkSize.x * y + x;
-                    
-                    fullVoxelMap[x, y, z] = voxelMaps[index];
-                }
-            }
-        }
-
-        return fullVoxelMap;
-    }
-
 }
 
-
-[System.Serializable]
-public class VoxelState
+[Serializable]
+public struct VoxelState
 {
-    public int id = 0;
-    public string blockName = "air";
-    public VoxelData.VoxelTypes voxelType = VoxelData.VoxelTypes.Block;
-    //public bool spawned = false;
+    public int index;
 
-    public VoxelState(int _id)
+    public VoxelState(int index)
     {
-        id = _id;
+        this.index = index;
     }
-
-    public VoxelState(int _id, string _name)
-    {
-        id = _id;
-        blockName = _name;
-    }
-
-    public VoxelState(int _id, VoxelData.VoxelTypes _voxelType)
-    {
-        id = _id;
-        voxelType = _voxelType;
-    }
-
 }

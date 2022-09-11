@@ -4,41 +4,38 @@ using UnityEngine;
 
 public class ObjectCulling : MonoBehaviour
 {
-
     public float availableDistance;
-    private float Distance;
-    private Light Lightcomponent;
-    private Camera Player;
+    private float _distance;
+    private Light _lightcomponent;
+    private Camera _player;
 
-    private float intensity = 1f;
-    ///------------------------------
-    void Start()
+    private float _intensity = 1f;
+
+    private void Start()
     {
-        Lightcomponent = gameObject.GetComponent<Light>();
-        intensity = Lightcomponent.intensity;
-        Player = Camera.main;
+        _lightcomponent = gameObject.GetComponent<Light>();
+        _intensity = _lightcomponent.intensity;
+        _player = Camera.main;
+
+        _lightcomponent.intensity = 0f;
+        _lightcomponent.enabled = false;
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
+        _distance = Vector3.Distance(_player.transform.position, transform.position);
 
-
-        Distance = Vector3.Distance(Player.transform.position, transform.position);
-
-
-        if (Distance < availableDistance)
+        if (_distance < availableDistance)
         {
-            Lightcomponent.intensity = Mathf.Lerp(Lightcomponent.intensity, intensity, 0.05f);
-        }
-        if (Distance > availableDistance)
-        {
-            Lightcomponent.intensity = Mathf.Lerp(Lightcomponent.intensity, 0f, 0.05f);
+            _lightcomponent.intensity = Mathf.Lerp(_lightcomponent.intensity, _intensity, 0.05f);
         }
 
-        Lightcomponent.enabled = !Mathf.Approximately(Lightcomponent.intensity, 0);
+        if (_distance > availableDistance)
+        {
+            _lightcomponent.intensity = Mathf.Lerp(_lightcomponent.intensity, 0f, 0.05f);
+        }
 
-
+        _lightcomponent.enabled = !Mathf.Approximately(_lightcomponent.intensity, 0);
     }
-
 }

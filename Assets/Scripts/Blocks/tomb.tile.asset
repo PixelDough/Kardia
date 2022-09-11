@@ -10,13 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b09aff04a574167419bf76876217326c, type: 3}
-  m_Name: Egypt1
+  m_Name: tomb.tile
   m_EditorClassIdentifier: 
-  blockTextures: {fileID: 2800000, guid: 11e4a17325ba8834c8fdbc4d1b63287d, type: 3}
-  sideFace: 21
-  textureSideFace: {fileID: 0}
-  topBottomFace: 1
-  textureTopBottomFace: {fileID: 0}
+  blockId: tomb.tile
+  texture: {fileID: 2800000, guid: 8e10523633ebe164dbbc80b31886b91a, type: 3}
   renderNeighborFaces: 0
-  isSolid: 1
-  name: 

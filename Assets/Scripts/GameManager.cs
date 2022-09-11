@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 public class GameManager : MonoBehaviour
@@ -18,6 +19,8 @@ public class GameManager : MonoBehaviour
         set => _instance = value;
     }
 
+    public BlockManager blockManager;
+    
     public bool isInEditMode = true;
 
     private void Start()
