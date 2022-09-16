@@ -7,6 +7,7 @@ public class CreativeCam : MonoBehaviour
 {
     public Cinemachine.CinemachineVirtualCamera cam;
     public Transform selectCube;
+    public GameObject playerObject;
 
     public enum VoxelTools
     {
@@ -75,6 +76,9 @@ public class CreativeCam : MonoBehaviour
             Camera.main.cullingMask |= LayerMask.GetMask("EditorUI");
             cam.gameObject.SetActive(true);
             isMenuOpen = false;
+            playerObject.SetActive(false);
+            playerObject.transform.localPosition = Vector3.zero;
+            playerObject.transform.rotation = Quaternion.identity;
         }
         else
         {
@@ -83,6 +87,9 @@ public class CreativeCam : MonoBehaviour
             Camera.main.cullingMask &= ~LayerMask.GetMask("EditorUI");
             cam.gameObject.SetActive(false);
             isMenuOpen = false;
+            playerObject.SetActive(true);
+            playerObject.transform.localPosition = Vector3.zero;
+            playerObject.transform.rotation = Quaternion.identity;
         }
     }
 

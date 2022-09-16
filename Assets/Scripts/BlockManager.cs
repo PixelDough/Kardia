@@ -9,15 +9,24 @@ using UnityEngine.Serialization;
 public class BlockManager : MonoBehaviour
 {
     [SerializeField]
-    private List<BlockData> allBlockData = new List<BlockData>();
+    public List<BlockData> allBlockData = new List<BlockData>();
 
     private readonly Dictionary<Hash128, int> _blockReferences = new();
 
     [SerializeField] private Material material;
     private Texture2DArray _texture2DArray;
 
+    private bool _isInitialized = false;
+    
     private void Start()
     {
+        Initialize();
+    }
+
+    public void Initialize()
+    {
+        if (_isInitialized) return;
+        
         _texture2DArray = new Texture2DArray(16, 16, 1024, TextureFormat.RGBA32, true, false)
         {
             filterMode = FilterMode.Point,
@@ -26,6 +35,7 @@ public class BlockManager : MonoBehaviour
         
         for (int i = 0; i < allBlockData.Count; i++)
         {
+            Debug.Log("Adding block " + allBlockData[i].IdHash + " to block references in Block Manager");
             _blockReferences.Add(allBlockData[i].IdHash, i);
             
             Graphics.CopyTexture(allBlockData[i].texture, 0, _texture2DArray, i);
@@ -34,6 +44,8 @@ public class BlockManager : MonoBehaviour
         _texture2DArray.Apply(false, true);
 
         material.SetTexture("_MainTex", _texture2DArray);
+
+        _isInitialized = true;
     }
     
     public BlockData GetBlockData(Hash128 blockIdHash)

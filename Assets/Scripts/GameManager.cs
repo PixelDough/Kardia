@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
         get
         {
             if (!_instance) _instance = FindObjectOfType<GameManager>();
+            _instance.Start();
             return _instance;
         }
         set => _instance = value;
@@ -32,5 +33,7 @@ public class GameManager : MonoBehaviour
         }
 
         _instance = this;
+        
+        blockManager.Initialize();
     }
 }

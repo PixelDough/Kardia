@@ -70,7 +70,7 @@ public class Chunk
         
         ChunkVoxelPalette.palette.Add(new Hash128());
         ChunkVoxelPalette.palette.Add(Hash128.Compute("tomb.block"));
-        ChunkVoxelPalette.palette.Add(Hash128.Compute("tomb.tile"));
+        ChunkVoxelPalette.palette.Add(Hash128.Compute("tomb.pillar.vine"));
         ChunkVoxelPalette.palette.Add(Hash128.Compute("tomb.sand"));
 
         for (var x = 0; x < VoxelData.chunkSize.x; x++)
@@ -79,7 +79,7 @@ public class Chunk
         {
             _lightMap[x, y, z] = 0;
             VoxelMap[x, y, z] = new VoxelState();
-            if (y == 0)
+            if (y <= Random.Range(0, 2))
             {
                 VoxelMap[x, y, z] = new VoxelState()
                 {
@@ -209,6 +209,12 @@ public class Chunk
             //     VoxelMap[blockCurrent.x, blockCurrent.y, blockCurrent.z].blockName = _world.blockTypes[blockID].name;
             // }
 
+            Debug.Log("Source: " + blockID);
+            foreach (var block in GameManager.Instance.blockManager.allBlockData)
+            {
+                Debug.Log("Block: " + block.IdHash);
+            }
+            
             for (var p = 0; p < 6; p++)
             {
                 var newCheck = new Vector3Int((int)(blockCurrent.x + VoxelData.faceChecks[p].x),
@@ -237,6 +243,8 @@ public class Chunk
                         _colors.Add(new Color(0, 0, 0, 0));
                     }
 
+                    Debug.Log(blockData.IdHash);
+                    
                     if (p == 2 || p == 3)
                         AddTexture(GameManager.Instance.blockManager.GetBlockTextureIndexTest(blockData.IdHash));
                     else
